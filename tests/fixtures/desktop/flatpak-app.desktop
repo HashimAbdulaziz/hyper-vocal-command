@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Test Flatpak App
+Exec=flatpak run --branch=stable --arch=x86_64 --command=testflatpakapp org.example.TestFlatpakApp
+Icon=testflatpakapp

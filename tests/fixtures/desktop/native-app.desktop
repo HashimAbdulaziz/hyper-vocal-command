@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Test Native App
+Exec=/usr/bin/testnativeapp %F
+Icon=testapp

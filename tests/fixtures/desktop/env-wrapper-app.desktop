@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Env Wrapped App
+Exec=env FOO=bar /usr/bin/envwrappedtarget --flag

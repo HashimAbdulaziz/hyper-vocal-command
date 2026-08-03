@@ -1,0 +1,19 @@
+[Unit]
+Description=hypr-vocal-command: local voice-command execution daemon
+Documentation=https://github.com/HashimAbdulaziz/hypr-vocal-command
+# Needs a running Wayland/Hyprland session (hyprctl/playerctl calls, notify-send) and a
+# reachable Ollama -- After doesn't *guarantee* Ollama is actually up yet (it's a
+# separate system service with its own startup time), which is exactly why the daemon
+# itself checks Ollama reachability at startup and exits non-zero if it isn't there:
+# combined with Restart=on-failure below, a slow Ollama boot just means a few retries,
+# not a permanently-wedged unit.
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/home/hashim/Documents/Coding/hypr-vocal-command/.venv/bin/hypr-vocal-command daemon
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target
