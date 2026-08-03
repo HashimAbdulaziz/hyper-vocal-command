@@ -12,6 +12,30 @@ scripts are all matched to this machine's actual configuration. See "About this 
 below for the specifics, and treat anything hardcoded (paths, keybinds, scripts) as a
 concrete example to adapt rather than a universal default.
 
+## What it can do
+
+Every voice command maps to exactly one of nine fixed, structured actions below.
+Anything that doesn't clearly match one of these is refused rather than guessed at.
+
+| Say | What happens |
+|---|---|
+| "open a terminal" | Opens the terminal emulator |
+| "show me my files" / "open the file manager" | Opens the file manager |
+| "open obsidian" / "open spotify" / "open whatsapp" / "open vscode" | Launches a named application |
+| "take a screenshot" / "screenshot to clipboard" / "start screen recording" | Runs a registered shortcut |
+| "lock screen" / "start task" | Runs a registered personal shortcut |
+| "close spotify" / "kill vscode" | Closes that application's window, on any workspace, focused or not |
+| "close this window" / "make this floating" | Window-manager action on the currently focused window |
+| "fullscreen this tile" / "maximize this window" | Fullscreen or maximize the focused window (two distinct actions) |
+| "show scratchpad" / "hide scratchpad" | Toggles the special scratchpad workspace |
+| "go to workspace 2" | Switches to a specific numbered workspace |
+| "go to the next workspace" / "go back a workspace" | Switches workspace relative to the current one |
+| "play music" / "resume music" | Plays or resumes Spotify, launching it first if it isn't running |
+| "pause music" / "stop music" | Pauses Spotify |
+| "music" | Toggles play/pause, or launches Spotify if it isn't running |
+| "update vscode" | Recognized, blocked pending a confirmation flow not yet built |
+| "update all my flatpak apps" | Recognized, blocked pending a confirmation flow not yet built |
+
 ## How it works
 
 1. A hotkey press (`SUPER+ALT+V`) runs a minimal, near-instant trigger that wakes an
@@ -68,48 +92,6 @@ so repeating the same command doesn't re-run the full classification step.
   client warm across requests instead of reloading them on every command.
 - **playerctl** -- MPRIS media control, used for play/pause/resume against Spotify.
 - Python 3.14, Typer (developer CLI), httpx, cachetools.
-
-## Available commands
-
-Every command below is one of nine fixed intents. Anything that does not clearly match
-one of these is refused rather than guessed at.
-
-**Open a terminal**
-`"open a terminal"` -- launches the configured terminal emulator.
-
-**Open the file manager**
-`"show me my files"`, `"open the file manager"`
-
-**Open an application**
-Launches a named, registered application or shortcut -- either hand-registered or
-discovered automatically from installed `.desktop` files.
-`"open obsidian"`, `"open spotify"`, `"open whatsapp"`, `"open vscode"`,
-`"take a screenshot"`, `"screenshot to clipboard"`, `"start screen recording"`,
-`"lock screen"`, `"start task"` (a Taskwarrior time-tracking toggle bound to this setup)
-
-**Close an application by name**
-Closes a named application's window wherever it is, even on a different workspace or
-unfocused -- distinct from closing whatever window currently has focus.
-`"close spotify"`, `"kill vscode"`
-
-**Window-manager action on the focused window**
-`"close this window"`, `"make this floating"`, `"fullscreen this tile"`,
-`"maximize this window"`, `"toggle split"`, `"show scratchpad"`, `"hide scratchpad"`
-
-**Switch workspace**
-`"go to workspace 2"`, `"go to the next workspace"`, `"go back a workspace"`
-
-**Media playback control**
-Targets Spotify specifically through `playerctl`. Launches Spotify if it isn't already
-running.
-`"play music"`, `"pause music"`, `"stop music"`, `"resume music"`,
-`"music"` (toggles play/pause if Spotify is running, launches it if not)
-
-**Update one named package / update all packages of a kind**
-Recognized, but intentionally not yet executable -- both require a confirmation flow
-that has not been built, so these currently refuse to run rather than update anything
-unconfirmed.
-`"update vscode"`, `"update all my flatpak apps"`
 
 ## Keybinds
 
