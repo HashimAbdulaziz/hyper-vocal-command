@@ -108,7 +108,52 @@ special floating workspace, not a new terminal)
 AND switching workspace -- this system can only do one action, so silently doing just \
 one half would be wrong)
 "open obsidian and close the terminal" -> UNRECOGNIZED (two separate actions chained \
-together, not one)"""
+together, not one)
+
+Commands may also be spoken in Egyptian Arabic, often mixed with English words \
+("Arabizi"/code-switching), with heavy dialect filler that carries no meaning and must \
+be ignored: يسطا، يا صاحبي، بقولك إيه، كده، بقى، يبني، لو سمحت، ممكن، عايز، محتاج، كنت عايز.
+Recognize the ACTION VERB and the APP NAME, ignore everything else. Put the app name in \
+`app_name` -- either its normal English name or the Arabic word the user said; both \
+resolve. Verb patterns:
+- OPEN (افتح، افتحلي، شغل، شغلي، هات، هاتلي، طلعلي، ادخل على، ابدأ، عايز افتح، محتاج افتح)
+- CLOSE (اقفل، اقفله، شيل، اطفي، اخرج من، اطلع من، انهي، خلاص كفايه) -- note that \
+"اطلع من X" / "اخرج من X" mean "close app X" (CLOSE_APP), never a window-manager action
+- FULLSCREEN (كبر الشاشه، افرد الشاشه، فول سكرين، الشاشه كامله)
+- MEDIA play (عايز اسمع، شغل الاغاني، سمعنا، شغلنا حاجه نسمعها، هات مزيكا)
+- MEDIA pause (وقف الاغاني، اقفل المزيكا، اطفي المزيكا، كفايه مزيكا، صدعت)
+
+Arabic examples:
+"افتح ال terminal" -> OPEN_TERMINAL
+"هاتلي شاشه التيرمينال" -> OPEN_TERMINAL (the terminal, phrased as "bring me")
+"افتح سطر الاوامر" -> OPEN_TERMINAL (command line)
+"يسطا افتح الواتس" -> OPEN_APP {{"app_name": "whatsapp"}} ("يسطا" is filler, ignore it)
+"عايز اشوف رسايل الواتس" -> OPEN_APP {{"app_name": "whatsapp"}}
+"شغل اوبسيديان" -> OPEN_APP {{"app_name": "obsidian"}}
+"عايز اكود افتحلي الاديتور" -> OPEN_APP {{"app_name": "vscode"}} (the editor = vscode)
+"يا صاحبي افتح المتصفح" -> OPEN_APP {{"app_name": "chrome"}} (browser = chrome)
+"طلعلي كروم قدامي" -> OPEN_APP {{"app_name": "chrome"}}
+"شغل سبوتيفاي" -> OPEN_APP {{"app_name": "spotify"}} (names the app -> open it)
+"عايز اسمع اغاني" -> MEDIA_CONTROL {{"action": "play"}} (asks for music, no app named)
+"شغلنا حاجه نسمعها" -> MEDIA_CONTROL {{"action": "play"}}
+"سمعنا حاجه وروقلنا الكلام" -> MEDIA_CONTROL {{"action": "play"}} ("سمعنا" = play us \
+something; the trailing "وروقلنا الكلام" is just slang filler, ignore it)
+"وقف الاغاني" -> MEDIA_CONTROL {{"action": "pause"}}
+"اقفل المزيكا" -> MEDIA_CONTROL {{"action": "pause"}}
+"اقفل الواتس" -> CLOSE_APP {{"app_name": "whatsapp"}}
+"شيل اوبسيديان من قدامي" -> CLOSE_APP {{"app_name": "obsidian"}} ("شيل" = remove/close)
+"اطفي كروم" -> CLOSE_APP {{"app_name": "chrome"}}
+"اقفل الواتس بقى وجع دماغ" -> CLOSE_APP {{"app_name": "whatsapp"}} (a trailing complaint \
+or comment like "وجع دماغ"/"كفايه كده"/"صدعت" is just filler -- it NEVER changes the \
+action or makes the command unrecognized)
+"اطلع من اوبسيديان" -> CLOSE_APP {{"app_name": "obsidian"}} ("اطلع من"/"اخرج من" = exit \
+that app, which is CLOSE_APP -- not a window-manager action)
+"اقفل التيرمينال" -> CLOSE_APP {{"app_name": "terminal"}} (a terminal IS a named app \
+when closing it)
+"اقفل الشاشه دي" -> HYPRLAND_ACTION {{"action": "close this window"}} (no app named)
+"كبر الشاشه" -> HYPRLAND_ACTION {{"action": "fullscreen this"}}
+"فول سكرين" -> HYPRLAND_ACTION {{"action": "fullscreen this"}}
+"روح للورك سبيس اتنين" -> WORKSPACE_SWITCH {{"workspace": 2}}"""
 
 
 def build_system_prompt() -> str:

@@ -1,10 +1,10 @@
 # hypr-vocal-command
 
 A fully local, offline voice-command execution daemon for Hyprland on Fedora. Press a
-hotkey, speak a command in plain English, and it is transcribed, classified, and
-executed as a real system action. Everything runs on-device: speech recognition and
-intent classification both happen locally, with no cloud service and no network calls
-beyond the machine itself.
+hotkey, speak a command in English or Egyptian Arabic, and it is transcribed,
+classified, and executed as a real system action. Everything runs on-device: speech
+recognition and intent classification both happen locally, with no cloud service and no
+network calls beyond the machine itself.
 
 This project is built specifically around one real Hyprland + Fedora setup rather than
 as a generic, portable tool. Keybinds, application aliases, and a handful of custom
@@ -97,8 +97,8 @@ so repeating the same command doesn't re-run the full classification step.
 
 | Keybind | Action |
 |---|---|
-| `SUPER+ALT+V` | Trigger the voice pipeline (English) |
-| `SUPER+ALT+B` | Reserved for Egyptian Arabic (see "Language support" below) |
+| `SUPER+ALT+V` | Trigger the voice pipeline, English |
+| `SUPER+ALT+B` | Trigger the voice pipeline, Egyptian Arabic |
 
 `SUPER+V` and `SUPER+B` were already bound on this setup (`togglefloating` and a
 Bluetooth menu, respectively), hence `ALT` added to both.
@@ -161,11 +161,43 @@ Two points worth being explicit about:
 
 ## Language support
 
-English is fully supported today. Egyptian Arabic support is planned next: a
-fine-tuned Arabic/Arabic-English model has already been selected for this, and the
-`SUPER+ALT+B` keybind is already reserved for it, but the pipeline itself is not wired
-up yet -- pressing it currently reports a clear "not supported yet" notification rather
-than doing nothing silently.
+English (`SUPER+ALT+V`) and Egyptian Arabic (`SUPER+ALT+B`) are both supported. Every
+command in the table above works in either language, through the same intents, the same
+handlers, and the same warm daemon -- only whisper's decode language and the primed
+vocabulary differ between them.
+
+Egyptian Arabic is handled as it is actually spoken, not as formal Arabic:
+
+- Heavy code-switching is expected and normal. "افتح ال terminal", "شغل سبوتيفاي", and
+  "افتح الـ code editor" all work, mixing Arabic and English freely in one sentence.
+- Dialect filler carries no meaning and is ignored: يسطا، يا صاحبي، بقولك إيه، كده،
+  بقى، يبني، لو سمحت. A trailing complaint ("اقفل الواتس بقى وجع دماغ") does not change
+  the action either.
+- Concept words resolve to the right application, not just product names: المتصفح and
+  البراوزر open Chrome, الاديتور opens VS Code, النوتس opens Obsidian.
+- Orthographic variants are folded before matching, so أوبسيديان and اوبسيديان,
+  الشاشة and الشاشه, all resolve identically.
+
+Examples:
+
+| Say | What happens |
+|---|---|
+| "يسطا هات التيرمينال" | Opens the terminal |
+| "افتحلي الـ vault بتاع اوبسيديان" | Opens Obsidian |
+| "عايز اكود افتحلي الاديتور" | Opens VS Code |
+| "يا صاحبي افتح المتصفح" | Opens Chrome |
+| "عايز اسمع اغاني" | Plays music on Spotify |
+| "شيل اوبسيديان من قدامي خلاص" | Closes Obsidian |
+| "اقفل الواتس بقى وجع دماغ" | Closes WhatsApp |
+| "كبر الشاشة" | Fullscreens the focused window |
+| "روح للورك سبيس اتنين" | Switches to workspace 2 |
+
+Both languages currently share one classifier model. A dedicated Arabic fine-tune was
+evaluated for this and rejected on measured evidence: it does not fit this machine's
+4GB of VRAM, so it ran at roughly 15.8 seconds per command against 2.5 seconds for the
+shared model, while classifying the difficult Arabic phrases no more accurately. The
+model is a configuration value (`model_ar`), so that choice can be revisited on
+different hardware without code changes.
 
 ## Development
 
@@ -190,7 +222,7 @@ full audio pipeline (capture, voice-activity detection, transcription), the warm
 background daemon and its Unix-socket protocol, and the real Hyprland keybind
 integration with a systemd `--user` service.
 
-Not yet built: the Egyptian Arabic pipeline, a real confirmation flow for destructive
+Not yet built: a real confirmation flow for destructive
 actions (package/system updates), broader hardening for long-term unattended use, web
 search, and free-text file lookup.
 

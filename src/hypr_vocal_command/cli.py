@@ -199,7 +199,7 @@ def record_once(
 
 @app.command("run-once")
 def run_once(
-    lang: str = typer.Option("en", "--lang", help="Language pipeline to use"),
+    lang: str = typer.Option("en", "--lang", help="Language pipeline to use (en or ar)"),
 ) -> None:
     """Full manual pipeline: record -> transcribe -> classify -> execute.
 
@@ -210,11 +210,14 @@ def run_once(
     from .audio.transcribe import load_model
     from .audio.vad import SileroVAD
     from .audio.vocabulary import build_command_vocabulary_prompt
+    from .daemon import SUPPORTED_LANGUAGES
     from .llm.cache import CachedClassifier
     from .pipeline import run_pipeline
 
-    if lang != "en":
-        typer.echo(f"Unsupported --lang {lang!r}; only 'en' is wired up until Phase 9.", err=True)
+    if lang not in SUPPORTED_LANGUAGES:
+        typer.echo(
+            f"Unsupported --lang {lang!r}; supported: {', '.join(SUPPORTED_LANGUAGES)}.", err=True
+        )
         raise typer.Exit(code=1)
 
     config = load_config()
@@ -224,7 +227,9 @@ def run_once(
     model = load_model()
     with CachedClassifier(
         OllamaClient(
-            model=config.model_en, base_url=config.ollama_base_url, timeout=config.llm_timeout_s
+            model=config.model_for(lang),
+            base_url=config.ollama_base_url,
+            timeout=config.llm_timeout_s,
         )
     ) as classifier:
         try:
@@ -233,7 +238,7 @@ def run_once(
                 whisper_model=model,
                 classifier=classifier,
                 system_prompt=build_system_prompt(),
-                vocabulary_prompt=build_command_vocabulary_prompt(config),
+                vocabulary_prompt=build_command_vocabulary_prompt(config, lang),
                 config=config,
                 language=lang,
             )

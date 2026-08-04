@@ -132,13 +132,28 @@ def test_rejects_invalid_json():
 def test_rejects_unsupported_language():
     daemon = _bare_daemon()
     writer = _FakeWriter(peer_uid=1000)
-    reader = _FakeReader(b'{"language": "ar"}\n')
+    reader = _FakeReader(b'{"language": "fr"}\n')
 
     asyncio.run(daemon.handle_connection(reader, writer))
 
     response = writer.last_response()
     assert response["ok"] is False
-    assert "ar" in response["message"]
+    assert "fr" in response["message"]
+
+
+def test_arabic_is_an_accepted_language():
+    # Phase 9: "ar" used to be rejected outright; it now routes through the pipeline.
+    languages_seen = []
+    daemon = _bare_daemon(
+        run_pipeline=lambda language: languages_seen.append(language) or {"ok": True}
+    )
+    writer = _FakeWriter(peer_uid=1000)
+    reader = _FakeReader(b'{"language": "ar"}\n')
+
+    asyncio.run(daemon.handle_connection(reader, writer))
+
+    assert languages_seen == ["ar"]
+    assert writer.last_response()["ok"] is True
 
 
 def test_responds_busy_when_already_processing_a_request():

@@ -29,6 +29,23 @@ def test_prompt_includes_core_default_app_names():
     assert "vscode" in prompt
 
 
+def test_english_prompt_contains_no_arabic():
+    # Whisper's context window is only 448 tokens, shared with decoded output. Emitting
+    # every registered surface form regardless of language pushed this past 540 tokens,
+    # and priming an English pass with Arabic text also biases the decoder's script.
+    prompt = build_command_vocabulary_prompt(Config(), "en")
+    assert not any("؀" <= ch <= "ۿ" for ch in prompt)
+
+
+def test_arabic_prompt_contains_arabic_and_stays_small():
+    prompt = build_command_vocabulary_prompt(Config(), "ar")
+    assert "الواتس" in prompt
+    assert "سبوتيفاي" in prompt
+    # Egyptian Arabic is heavily code-switched, so core English app names stay primed too.
+    assert "spotify" in prompt
+    assert len(prompt) // 4 < 448
+
+
 def test_prompt_does_not_include_the_full_scanned_app_catalog():
     # Deliberately bounded: config.apps can hold 100+ scanned apps, which would blow
     # whisper's small context window if all crammed into the prompt.

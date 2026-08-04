@@ -39,7 +39,21 @@ class HyprlandActionAlias(BaseModel):
 
 DEFAULT_APPS: dict[str, AppAlias] = {
     "obsidian": AppAlias(
-        surface_forms=["obsidian"],
+        surface_forms=[
+            "obsidian",
+            "notes",
+            "vault",
+            "obsidian vault",
+            # Egyptian Arabic, including the concept words users reach for instead of the
+            # product name ("the notes app", "the vault").
+            "اوبسيديان",
+            "النوتس",
+            "نوتس",
+            "الملاحظات",
+            "برنامج النوتس",
+            "الفولت",
+            "فولت",
+        ],
         manager="flatpak",
         identifier="md.obsidian.Obsidian",
         # Real Hyprland window class is "md.Obsidian" (mixed case!), not the registry
@@ -60,12 +74,91 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             # through verbatim as app_name.
             "putify",
             "this putify",
+            # Egyptian Arabic. Bare "المزيكا"/"الاغاني" (music/songs) deliberately live in
+            # MEDIA_CONTROL's prompt guidance instead of here, for the same open-vs-play
+            # ambiguity reason as their English counterparts above.
+            "سبوتيفاي",
+            "اسبوتيفاي",
+            "سبوتفاي",
+            # "the music"/"the songs" as an APP name. These resolve here so that
+            # "اقفل المزيكا" ("close the music") can actually close Spotify -- the user's
+            # own phrasing list files those under closing Spotify, not pausing it. Bare
+            # listening requests ("عايز اسمع اغاني") never carry an app_name at all and
+            # still route to MEDIA_CONTROL, so this doesn't collide with playback.
+            "music",
+            "المزيكا",
+            "مزيكا",
+            "الاغاني",
+            "اغاني",
+            "الموسيقى",
+            "موسيقى",
         ],
         manager="flatpak",
         identifier="com.spotify.Client",
     ),
+    "terminal": AppAlias(
+        # Opening a terminal is its own intent (OPEN_TERMINAL) and does not go through
+        # here -- this entry exists so CLOSE_APP can target a terminal *by name*
+        # ("اقفل التيرمينال", "close the terminal"), which otherwise had no resolvable
+        # app_name at all. Launching via this alias still works and is harmless.
+        surface_forms=[
+            "terminal",
+            "kitty",
+            "command line",
+            "التيرمينال",
+            "تيرمينال",
+            "الترمينال",
+            "شاشه الاوامر",
+            "سطر الاوامر",
+        ],
+        manager="native",
+        identifier="kitty",
+        window_class="kitty",
+    ),
+    "chrome": AppAlias(
+        # Not previously registered as a default at all -- only "google chrome" existed,
+        # via scan-apps. Bare "chrome" and the Arabic browser concept words were both
+        # unresolvable before this.
+        surface_forms=[
+            "chrome",
+            "google chrome",
+            "browser",
+            "web browser",
+            "كروم",
+            "جوجل كروم",
+            "المتصفح",
+            "متصفح",
+            "البراوزر",
+            "براوزر",
+        ],
+        manager="native",
+        identifier="/home/hashim/.local/bin/google-chrome",
+        window_class="google-chrome",
+    ),
     "vscode": AppAlias(
-        surface_forms=["vscode", "vs code", "visual studio code", "code"],
+        surface_forms=[
+            "vscode",
+            "vs code",
+            "visual studio code",
+            "code",
+            "editor",
+            "code editor",
+            # Egyptian Arabic, including transliterations and the concept words users
+            # reach for ("the editor", "I want to code").
+            "في اس كود",
+            "فيجوال ستوديو كود",
+            "فيجوال ستوديو",
+            "فيجوال استديو",
+            "فيجوال استوديو",
+            "فيجوال ستديو",
+            "الاديتور",
+            "اديتور",
+            "الايديتور",
+            "ايديتور",
+            "الكود ايديتور",
+            "المحرر",
+            "عايز اكود",
+        ],
         manager="native",
         identifier="code",
         # Real Hyprland window class is "code", not the registry key "vscode" --
@@ -102,6 +195,18 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             "send a message",
             "i want to send a message",
             "i want to send message on whatsapp",
+            # Egyptian Arabic. The classifier usually normalizes these to "whatsapp"
+            # itself, but registering them keeps resolution working even when it passes
+            # the Arabic through verbatim -- deterministic, and far cheaper than teaching
+            # every variant through prompt examples.
+            "الواتس",
+            "واتس",
+            "واتساب",
+            "الواتساب",
+            "الشات",
+            "شات",
+            "رسايل",
+            "الرسايل",
         ],
         manager="flatpak",
         identifier="com.ktechpit.whatsie",
@@ -168,6 +273,13 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
             "kill this window",
             "kill this",
             "get rid of this window",
+            # Egyptian Arabic -- the focused window, with no app named.
+            "اقفل الشاشه دي",
+            "اقفل الويندو دي",
+            "اقفل ده",
+            "شيل ده من قدامي",
+            "اقفل الويندو",
+            "اقفل التايل",
         ],
         dispatcher="killactive",
     ),
@@ -185,7 +297,13 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
     # which is why "fullscreen this tile" looked like a no-op to the user despite the
     # dispatch reporting success.
     "maximize_window": HyprlandActionAlias(
-        surface_forms=["maximize this", "maximize window", "maximize this window"],
+        surface_forms=[
+            "maximize this",
+            "maximize window",
+            "maximize this window",
+            "ماكسيمايز",
+            "كبر الويندو",
+        ],
         dispatcher="fullscreen",
         args="1",
     ),
@@ -202,6 +320,17 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
             "toggle the fullscreen",
             "toggle fullscreen of this tile",
             "toggle fullscreen for this window",
+            # Egyptian Arabic
+            "فول سكرين",
+            "فولسكرين",
+            "كبر الشاشه",
+            "كبر الشاشه دي",
+            "افرد الشاشه",
+            "الشاشه كامله",
+            "خلي الشاشه كامله",
+            "شاشه كامله",
+            "وسع الشاشه",
+            "كبر البرنامج",
         ],
         dispatcher="fullscreen",
         args="0",
@@ -224,14 +353,32 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
 }
 
 
+# Arabic orthographic variants that carry no pronunciation difference for our purposes
+# but are distinct codepoints, so they'd silently fail exact alias matching. Real example
+# from this project's own collected phrasings: users write both "أوبسيديان" and
+# "اوبسيديان" for Obsidian, and both "المزيكة"/"المزيكه" for music.
+_ARABIC_CHAR_FOLDING = str.maketrans(
+    {
+        "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا",  # hamzated alef forms -> plain alef
+        "ى": "ي",  # alef maqsura -> ya
+        "ة": "ه",  # ta marbuta -> ha
+        "ؤ": "و",
+        "ئ": "ي",
+        "ـ": "",  # tatweel (kashida), a purely decorative stretching character
+    }
+)
+
+
 def normalize_text(text: str) -> str:
     # Strips punctuation too, not just case/whitespace -- whisper's own punctuation choice
     # (a trailing period, in particular) isn't perfectly deterministic across two separate
     # recordings of "the same" spoken phrase, and this text feeds the Phase 4 LLM response
     # cache's key (llm/cache.py) as well as alias surface-form matching here. Without this,
     # "open a terminal." vs "open a terminal" would silently miss the cache despite being
-    # the same command to a human ear.
+    # the same command to a human ear. Arabic punctuation (؟ ، ؛) is covered by the same
+    # class, and Arabic diacritics (tashkeel) are dropped by it as well.
     text = re.sub(r"[^\w\s]", "", text.lower())
+    text = text.translate(_ARABIC_CHAR_FOLDING)
     return " ".join(text.split())
 
 
@@ -274,6 +421,17 @@ class Config(BaseModel):
     file_manager_cmd: list[str] = Field(default_factory=lambda: ["nautilus"])
     allowed_roots: list[Path] = Field(default_factory=lambda: [Path.home()])
     model_en: str = "llama3.2:latest"
+    # Egyptian Arabic deliberately uses the SAME model as English, not the dedicated
+    # `arazn-arabic` fine-tune that was originally planned for it. Measured on this
+    # hardware: arazn-arabic is 5.6GB, does not fit the P2000's 4GB VRAM, and therefore
+    # runs at a 45%/55% CPU/GPU split averaging ~15.8s per classification (vs ~2.5s for
+    # llama3.2, which stays fully GPU-resident) -- and on a head-to-head over the exact
+    # Arabic phrases llama3.2 got wrong, it fixed only one of five while regressing
+    # others. It is a conversational Arabic fine-tune, not an instruction-following
+    # structured-output model, which is what this task actually needs. Loading it would
+    # also evict llama3.2 from VRAM, causing a model reload on every language switch.
+    # Kept as a separate setting so it can be pointed elsewhere without code changes.
+    model_ar: str = "llama3.2:latest"
     ollama_base_url: str = "http://localhost:11434"
     llm_timeout_s: float = 60.0
     allowed_transcription_languages: list[str] = Field(default_factory=lambda: ["en", "ar"])
@@ -311,6 +469,13 @@ class Config(BaseModel):
 
     def resolve_hyprland_action(self, spoken_name: str) -> HyprlandActionAlias | None:
         return _resolve_hyprland_action(self.hyprland_actions, spoken_name)
+
+    def model_for(self, language: str) -> str:
+        """The classifier model to use for a supported language code."""
+        try:
+            return {"en": self.model_en, "ar": self.model_ar}[language]
+        except KeyError:
+            raise ValueError(f"unsupported language: {language!r}") from None
 
 
 def _xdg_config_home() -> Path:

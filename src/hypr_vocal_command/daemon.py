@@ -48,6 +48,8 @@ from .utils.telemetry import log_event
 
 _PEERCRED_STRUCT = "3i"  # pid_t, uid_t, gid_t -- see unix(7) SO_PEERCRED
 
+SUPPORTED_LANGUAGES = ("en", "ar")
+
 
 def socket_path() -> Path:
     xdg_runtime_dir = os.environ.get("XDG_RUNTIME_DIR")
@@ -92,18 +94,31 @@ class Daemon:
         # Warm resources: built once here, reused for every future connection.
         self._vad = SileroVAD()
         self._whisper_model = load_model()
-        self._classifier = CachedClassifier(
-            OllamaClient(
-                model=self.config.model_en,
-                base_url=self.config.ollama_base_url,
-                timeout=self.config.llm_timeout_s,
-            )
-        )
         self._system_prompt = build_system_prompt()
-        self._vocabulary_prompt = build_command_vocabulary_prompt(self.config)
+
+        # Keyed by model name, not by language: English and Egyptian Arabic currently
+        # share one model (see Config.model_ar), so this is normally a single warm
+        # client rather than one per language. If the two are ever pointed at different
+        # models, each still gets its own client without changing this code.
+        self._classifiers: dict[str, CachedClassifier] = {}
+        for language in SUPPORTED_LANGUAGES:
+            model = self.config.model_for(language)
+            if model not in self._classifiers:
+                self._classifiers[model] = CachedClassifier(
+                    OllamaClient(
+                        model=model,
+                        base_url=self.config.ollama_base_url,
+                        timeout=self.config.llm_timeout_s,
+                    )
+                )
+        self._vocabulary_prompts = {
+            language: build_command_vocabulary_prompt(self.config, language)
+            for language in SUPPORTED_LANGUAGES
+        }
 
     def close(self) -> None:
-        self._classifier.close()
+        for classifier in self._classifiers.values():
+            classifier.close()
 
     async def handle_connection(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -133,7 +148,7 @@ class Daemon:
                 return
 
             language = request.get("language", "en")
-            if language != "en":
+            if language not in SUPPORTED_LANGUAGES:
                 message = f"unsupported language {language!r}"
                 notify("hypr-vocal-command", message, urgency="critical")
                 await self._respond(writer, {"ok": False, "message": message})
@@ -189,9 +204,9 @@ class Daemon:
         result = run_pipeline(
             vad=self._vad,
             whisper_model=self._whisper_model,
-            classifier=self._classifier,
+            classifier=self._classifiers[self.config.model_for(language)],
             system_prompt=self._system_prompt,
-            vocabulary_prompt=self._vocabulary_prompt,
+            vocabulary_prompt=self._vocabulary_prompts[language],
             config=self.config,
             language=language,
         )

@@ -1,3 +1,5 @@
+import pytest
+
 from hypr_vocal_command.appscan import AppEntry, write_generated_apps
 from hypr_vocal_command.config import load_config, normalize_text
 
@@ -8,6 +10,46 @@ def test_normalize_text_strips_punctuation():
     # LLM cache (this text is the cache key) despite being the same command to a human ear.
     assert normalize_text("open a terminal.") == normalize_text("open a terminal")
     assert normalize_text("Switch to workspace two!") == "switch to workspace two"
+
+
+def test_normalize_text_folds_arabic_orthographic_variants():
+    # The project's own collected Egyptian Arabic phrasings contain both "أوبسيديان" and
+    # "اوبسيديان" (different alef codepoints) for the same word, and both ة/ه endings --
+    # without folding, registered aliases would silently fail to match half of them.
+    assert normalize_text("أوبسيديان") == normalize_text("اوبسيديان")
+    assert normalize_text("كبر الشاشة") == normalize_text("كبر الشاشه")
+    assert normalize_text("افتح الواتس؟") == "افتح الواتس"
+
+
+def test_arabic_app_aliases_resolve():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    assert config.resolve_app("الواتس").identifier == "com.ktechpit.whatsie"
+    assert config.resolve_app("أوبسيديان").identifier == "md.obsidian.Obsidian"
+    assert config.resolve_app("النوتس").identifier == "md.obsidian.Obsidian"
+    assert config.resolve_app("الاديتور").identifier == "code"
+    assert config.resolve_app("المتصفح").identifier.endswith("google-chrome")
+    assert config.resolve_app("سبوتيفاي").identifier == "com.spotify.Client"
+
+
+def test_arabic_hyprland_actions_resolve():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    fullscreen = config.resolve_hyprland_action("كبر الشاشة")
+    assert (fullscreen.dispatcher, fullscreen.args) == ("fullscreen", "0")
+    assert config.resolve_hyprland_action("فول سكرين").dispatcher == "fullscreen"
+
+
+def test_model_for_language():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    assert config.model_for("en") == config.model_en
+    assert config.model_for("ar") == config.model_ar
+    with pytest.raises(ValueError):
+        config.model_for("fr")
 
 
 def test_resolve_app_window_class_uses_explicit_override():

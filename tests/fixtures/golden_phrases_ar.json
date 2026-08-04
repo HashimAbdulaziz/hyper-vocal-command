@@ -1,0 +1,63 @@
+[
+  {"text": "التيرمينال", "intent": "OPEN_TERMINAL"},
+  {"text": "افتح ال terminal", "intent": "OPEN_TERMINAL"},
+  {"text": "شغل terminal", "intent": "OPEN_TERMINAL"},
+  {"text": "يسطا هات التيرمينال", "intent": "OPEN_TERMINAL"},
+  {"text": "هاتلي شاشة التيرمينال", "intent": "OPEN_TERMINAL"},
+  {"text": "ممكن تفتحلي التيرمينال؟", "intent": "OPEN_TERMINAL"},
+  {"text": "افتح سطر الأوامر", "intent": "OPEN_TERMINAL"},
+  {"text": "أنا عايز افتح التيرمينال", "intent": "OPEN_TERMINAL"},
+
+  {"text": "يسطا افتح الواتس", "intent": "OPEN_APP", "app_name": "whatsapp"},
+  {"text": "افتح الواتساب", "intent": "OPEN_APP", "app_name": "whatsapp"},
+  {"text": "كنت عايز ابص على الواتس", "intent": "OPEN_APP", "app_name": "whatsapp"},
+  {"text": "شغل تطبيق الواتساب", "intent": "OPEN_APP", "app_name": "whatsapp"},
+  {"text": "عايز اشوف رسايل الواتس", "intent": "OPEN_APP", "app_name": "whatsapp"},
+
+  {"text": "شغل اوبسيديان", "intent": "OPEN_APP", "app_name": "obsidian"},
+  {"text": "هاتلي اوبسيديان", "intent": "OPEN_APP", "app_name": "obsidian"},
+  {"text": "بقولك إيه، افتحلي اوبسيديان كده", "intent": "OPEN_APP", "app_name": "obsidian"},
+  {"text": "افتحلي الـ vault بتاع اوبسيديان", "intent": "OPEN_APP", "app_name": "obsidian"},
+  {"text": "عايز افتح النوتس بتاعتي على اوبسيديان", "intent": "OPEN_APP"},
+
+  {"text": "عايز اكود", "intent": "OPEN_APP"},
+  {"text": "عايز اكود افتحلي الاديتور", "intent": "OPEN_APP"},
+  {"text": "شغل في اس كود", "intent": "OPEN_APP"},
+  {"text": "يا صاحبي افتح الـ editor", "intent": "OPEN_APP"},
+  {"text": "افتح الـ code editor", "intent": "OPEN_APP"},
+
+  {"text": "يسطا افتح كروم", "intent": "OPEN_APP", "app_name": "chrome"},
+  {"text": "يا صاحبي افتح المتصفح", "intent": "OPEN_APP", "app_name": "chrome"},
+  {"text": "هات البراوزر", "intent": "OPEN_APP", "app_name": "chrome"},
+  {"text": "عايز ادخل على النت، هاتلي كروم", "intent": "OPEN_APP", "app_name": "chrome"},
+
+  {"text": "شغل سبوتيفاي", "intent": "OPEN_APP", "app_name": "spotify"},
+  {"text": "طلعلي سبوتيفاي قدامي", "intent": "OPEN_APP", "app_name": "spotify"},
+
+  {"text": "عايز اسمع اغاني", "intent": "MEDIA_CONTROL", "action": "play"},
+  {"text": "عايز اسمع موسيقى", "intent": "MEDIA_CONTROL", "action": "play"},
+  {"text": "شغل الاغاني", "intent": "MEDIA_CONTROL", "action": "play"},
+  {"text": "شغلنا حاجة نسمعها يبني", "intent": "MEDIA_CONTROL", "action": "play"},
+  {"text": "سمعنا حاجة وروقلنا الكلام", "intent": "MEDIA_CONTROL", "action": "play"},
+  {"text": "وقف الأغاني", "intent": "MEDIA_CONTROL", "action": "pause"},
+
+  {"text": "اقفل الواتس", "intent": "CLOSE_APP", "app_name": "whatsapp"},
+  {"text": "اقفل الواتس بقى وجع دماغ", "intent": "CLOSE_APP", "app_name": "whatsapp"},
+  {"text": "شيل الواتس من قدامي", "intent": "CLOSE_APP", "app_name": "whatsapp"},
+  {"text": "اخرج من الواتس", "intent": "CLOSE_APP", "app_name": "whatsapp"},
+  {"text": "اقفل اوبسيديان", "intent": "CLOSE_APP", "app_name": "obsidian"},
+  {"text": "شيل اوبسيديان من قدامي خلاص", "intent": "CLOSE_APP", "app_name": "obsidian"},
+  {"text": "اطلع من اوبسيديان", "intent": "CLOSE_APP", "app_name": "obsidian"},
+  {"text": "اقفل التيرمينال", "intent": "CLOSE_APP", "app_name": "terminal"},
+  {"text": "اعمل kill للتيرمينال", "intent": "CLOSE_APP", "app_name": "terminal"},
+  {"text": "صدعت، اقفل سبوتيفاي", "intent": "CLOSE_APP", "app_name": "spotify"},
+  {"text": "اقفل المزيكا", "intent": "CLOSE_APP"},
+
+  {"text": "كبر الشاشة", "intent": "HYPRLAND_ACTION"},
+  {"text": "فول سكرين", "intent": "HYPRLAND_ACTION"},
+  {"text": "افرد الشاشة", "intent": "HYPRLAND_ACTION"},
+  {"text": "خلي الشاشة كاملة", "intent": "HYPRLAND_ACTION"},
+  {"text": "اقفل الشاشة دي", "intent": "HYPRLAND_ACTION"},
+
+  {"text": "روح للورك سبيس اتنين", "intent": "WORKSPACE_SWITCH", "workspace": 2}
+]
