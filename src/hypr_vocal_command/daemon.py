@@ -34,6 +34,7 @@ from typing import Any
 import httpx
 
 from . import handlers  # populates the registry; also used directly below
+from .audio import wav2vec2_ctc
 from .audio.transcribe import load_model
 from .audio.vad import SileroVAD
 from .audio.vocabulary import build_command_vocabulary_prompt
@@ -111,6 +112,12 @@ class Daemon:
                         timeout=self.config.llm_timeout_s,
                     )
                 )
+        # Egyptian Arabic uses a dedicated CTC model when its exported weights are
+        # present; without them the Arabic path silently falls back to whisper, which is
+        # worse on this dialect but still functional.
+        self._arabic_transcriber = (
+            wav2vec2_ctc.load_transcriber() if wav2vec2_ctc.is_available() else None
+        )
         self._vocabulary_prompts = {
             language: build_command_vocabulary_prompt(self.config, language)
             for language in SUPPORTED_LANGUAGES
@@ -207,6 +214,7 @@ class Daemon:
             classifier=self._classifiers[self.config.model_for(language)],
             system_prompt=self._system_prompt,
             vocabulary_prompt=self._vocabulary_prompts[language],
+            arabic_transcriber=self._arabic_transcriber,
             config=self.config,
             language=language,
         )

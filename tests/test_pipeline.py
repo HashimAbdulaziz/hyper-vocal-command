@@ -136,3 +136,69 @@ def test_full_success_path_executes_and_reports_all_fields(monkeypatch):
     assert result.llm_latency_ms == 42.0
     assert result.total_ms > 0
     assert classifier.calls == [("system prompt", "open a terminal")]
+
+
+class _FakeArabicTranscriber:
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.calls = 0
+
+    def transcribe(self, audio):
+        self.calls += 1
+        return self.text
+
+
+def test_arabic_routes_to_the_ctc_transcriber_not_whisper(monkeypatch):
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.record_utterance",
+        lambda vad, cfg: np.zeros(1600, dtype=np.int16),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.transcribe",
+        lambda *a, **k: pytest.fail("whisper must not be used for the Arabic path"),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.execute",
+        lambda *a, **k: ExecutionResult(ok=True, message="done"),
+    )
+    arabic = _FakeArabicTranscriber("اقفل الواتس")
+    classifier = _FakeClassifier(
+        result=ClassificationResult(
+            raw_response="{}",
+            latency_ms=1.0,
+            envelope={"schema_version": 1, "intent": "CLOSE_APP", "confidence": 0.9, "args": {}},
+        )
+    )
+
+    result = run_pipeline(**_kwargs(classifier=classifier, language="ar", arabic_transcriber=arabic))
+
+    assert arabic.calls == 1
+    assert result.transcript == "اقفل الواتس"
+
+
+def test_english_still_uses_whisper_even_when_ctc_is_available(monkeypatch):
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.record_utterance",
+        lambda vad, cfg: np.zeros(1600, dtype=np.int16),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.transcribe",
+        lambda *a, **k: _FakeTranscription(text="open a terminal"),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.execute",
+        lambda *a, **k: ExecutionResult(ok=True, message="done"),
+    )
+    arabic = _FakeArabicTranscriber("should not be used")
+    classifier = _FakeClassifier(
+        result=ClassificationResult(
+            raw_response="{}",
+            latency_ms=1.0,
+            envelope={"schema_version": 1, "intent": "OPEN_TERMINAL", "confidence": 0.9, "args": {}},
+        )
+    )
+
+    result = run_pipeline(**_kwargs(classifier=classifier, language="en", arabic_transcriber=arabic))
+
+    assert arabic.calls == 0
+    assert result.transcript == "open a terminal"

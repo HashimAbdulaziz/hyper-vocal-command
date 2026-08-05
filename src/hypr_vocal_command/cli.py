@@ -207,6 +207,7 @@ def run_once(
     daemon which keeps all three warm. Same `pipeline.run_pipeline()` either way --
     requires the optional `audio` extra (`pip install -e '.[audio]'`).
     """
+    from .audio import wav2vec2_ctc
     from .audio.transcribe import load_model
     from .audio.vad import SileroVAD
     from .audio.vocabulary import build_command_vocabulary_prompt
@@ -241,6 +242,9 @@ def run_once(
                 vocabulary_prompt=build_command_vocabulary_prompt(config, lang),
                 config=config,
                 language=lang,
+                arabic_transcriber=(
+                    wav2vec2_ctc.load_transcriber() if wav2vec2_ctc.is_available() else None
+                ),
             )
         except httpx.HTTPError as exc:
             typer.echo(f"LLM request failed: {exc}", err=True)

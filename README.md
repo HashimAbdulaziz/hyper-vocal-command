@@ -192,12 +192,26 @@ Examples:
 | "كبر الشاشة" | Fullscreens the focused window |
 | "روح للورك سبيس اتنين" | Switches to workspace 2 |
 
-Both languages currently share one classifier model. A dedicated Arabic fine-tune was
-evaluated for this and rejected on measured evidence: it does not fit this machine's
-4GB of VRAM, so it ran at roughly 15.8 seconds per command against 2.5 seconds for the
-shared model, while classifying the difficult Arabic phrases no more accurately. The
-model is a configuration value (`model_ar`), so that choice can be revisited on
-different hardware without code changes.
+Speech recognition differs by language. English uses whisper.cpp; Egyptian Arabic uses
+a dedicated wav2vec2 CTC model instead, chosen on measured evidence rather than
+assumption. Whisper's multilingual models are trained largely on Modern Standard Arabic
+and mishear Egyptian pronunciation -- most damagingly on "اقفل" (close), which Egyptians
+realize with a glottal stop. In a live comparison on real speech, whisper misread it as
+"فين" (where) and the pipeline then *opened* WhatsApp when asked to close it. The CTC
+model read the same recordings correctly and never inverted an action.
+
+It is also faster, not slower: CTC decodes in a single forward pass with no
+autoregressive loop, so it runs in roughly 680ms against whisper base's 1300ms, despite
+having more parameters. An Egyptian-tuned whisper `small` was evaluated too and rejected
+at roughly 6.1 seconds per command. The model is exported to ONNX ahead of time and runs
+through the same `onnxruntime` this project already uses for voice-activity detection,
+so it adds no new runtime dependency; PyTorch is needed only to produce the export.
+
+Both languages share one classifier model. A dedicated Arabic LLM fine-tune was
+evaluated and rejected: it does not fit this machine's 4GB of VRAM, so it ran at roughly
+15.8 seconds per command against 2.5 seconds for the shared model, while classifying the
+difficult Arabic phrases no more accurately. That choice is a configuration value
+(`model_ar`) and can be revisited on different hardware without code changes.
 
 ## Development
 

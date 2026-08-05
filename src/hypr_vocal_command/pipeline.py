@@ -12,8 +12,9 @@ from dataclasses import dataclass
 import httpx
 from pywhispercpp.model import Model
 
-from .audio.transcribe import transcribe
+from .audio.transcribe import TranscriptionResult, transcribe
 from .audio.vad import SileroVAD, UtteranceConfig, record_utterance
+from .audio.wav2vec2_ctc import Wav2Vec2Transcriber
 from .config import Config
 from .executor import execute
 from .llm.cache import CachedClassifier
@@ -41,6 +42,7 @@ def run_pipeline(
     vocabulary_prompt: str,
     config: Config,
     language: str = "en",
+    arabic_transcriber: Wav2Vec2Transcriber | None = None,
 ) -> PipelineResult:
     pipeline_start = time.monotonic()
 
@@ -58,13 +60,25 @@ def run_pipeline(
         )
 
     transcribe_start = time.monotonic()
-    transcription = transcribe(
-        whisper_model,
-        audio,
-        initial_prompt=vocabulary_prompt,
-        allowed_languages=config.allowed_transcription_languages,
-        language_hint=language,
-    )
+    if arabic_transcriber is not None and language == "ar":
+        # Egyptian Arabic goes through the dedicated CTC model -- both more accurate on
+        # this dialect and faster than whisper here. See audio/wav2vec2_ctc.py.
+        text = arabic_transcriber.transcribe(audio)
+        transcription = TranscriptionResult(
+            text=text,
+            language=language,
+            language_probability=1.0,
+            raw_top_language=language,
+            raw_top_probability=1.0,
+        )
+    else:
+        transcription = transcribe(
+            whisper_model,
+            audio,
+            initial_prompt=vocabulary_prompt,
+            allowed_languages=config.allowed_transcription_languages,
+            language_hint=language,
+        )
     transcribe_ms = (time.monotonic() - transcribe_start) * 1000
 
     if not transcription.text:
