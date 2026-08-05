@@ -167,6 +167,11 @@ that app, which is CLOSE_APP -- not a window-manager action)
 "اقفل التيرمينال" -> CLOSE_APP {{"app_name": "terminal"}} (a terminal IS a named app \
 when closing it)
 "اقفل الشاشه دي" -> HYPRLAND_ACTION {{"action": "close this window"}} (no app named)
+"اقفل ابسيدي يعنا يا حبيب قلب" -> CLOSE_APP {{"app_name": "obsidian"}} (a garbled app \
+name is STILL an app name: keep it CLOSE_APP even when the name is hard to read. If you \
+truly cannot tell which app it is, answer UNRECOGNIZED. Never turn a close request that \
+names an app into a "close the focused window" action -- that would close some unrelated \
+window instead of the app the user asked for.)
 "كبر الشاشه" -> HYPRLAND_ACTION {{"action": "fullscreen this"}}
 "فول سكرين" -> HYPRLAND_ACTION {{"action": "fullscreen this"}}
 "روح للورك سبيس اتنين" -> WORKSPACE_SWITCH {{"workspace": 2}}"""
