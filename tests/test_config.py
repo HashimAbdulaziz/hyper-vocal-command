@@ -1,7 +1,7 @@
 import pytest
 
 from hypr_vocal_command.appscan import AppEntry, write_generated_apps
-from hypr_vocal_command.config import load_config, normalize_text
+from hypr_vocal_command.config import AppAlias, load_config, normalize_text
 
 
 def test_normalize_text_strips_punctuation():
@@ -156,3 +156,51 @@ def test_generated_apps_with_dotted_key_round_trips(tmp_path):
     alias = config.resolve_app("dotted app")
     assert alias is not None
     assert alias.identifier == "org.example.DottedApp"
+
+
+def test_fuzzy_resolves_garbled_app_names():
+    # CTC speech recognition has no internal language model, so it spells phonetically
+    # and inconsistently: these are all real transcriptions of "اوبسيديان" (obsidian)
+    # captured across separate utterances of the same word.
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    for garbled in ("اكسيديا", "بسيدياني", "ابسيد بع", "نوتست"):
+        alias = config.resolve_app(garbled)
+        assert alias is not None, garbled
+        assert alias.identifier == "md.obsidian.Obsidian", garbled
+
+    assert config.resolve_app("الواتسب").identifier == "com.ktechpit.whatsie"
+    assert config.resolve_app("كرومم").identifier.endswith("google-chrome")
+
+
+def test_fuzzy_refuses_when_two_apps_are_too_close():
+    # "النوتس" (obsidian) and "الواتس" (whatsapp) differ by one letter, so a garbled
+    # input can sit near both. Acting on a coin-flip would open or close the wrong
+    # application, so genuinely ambiguous input must resolve to nothing.
+    from hypr_vocal_command.config import _FUZZY_AMBIGUITY_MARGIN, _fuzzy_resolve_app
+
+    aliases = {
+        "obsidian": AppAlias(surface_forms=["النوتس"], manager="flatpak", identifier="obs"),
+        "whatsapp": AppAlias(surface_forms=["الواتس"], manager="flatpak", identifier="wa"),
+    }
+    assert _fuzzy_resolve_app(aliases, "النوتس") is not None  # exact-ish, unambiguous
+    assert _FUZZY_AMBIGUITY_MARGIN > 0
+
+
+def test_fuzzy_refuses_short_and_unmatchable_input():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    assert config.resolve_app("نس") is None  # too short to match safely
+    assert config.resolve_app("inclsy") is None  # nothing close enough
+    assert config.resolve_app("some totally unknown app") is None
+
+
+def test_exact_match_still_wins_over_fuzzy():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    assert config.resolve_app("obsidian").identifier == "md.obsidian.Obsidian"
+    assert config.resolve_app("الواتس").identifier == "com.ktechpit.whatsie"
+    assert config.resolve_app("spotify").identifier == "com.spotify.Client"

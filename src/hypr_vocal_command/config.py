@@ -1,5 +1,6 @@
 """Loads and validates hypr-vocal-command configuration."""
 
+import difflib
 import os
 import re
 import tomllib
@@ -408,6 +409,56 @@ def _resolve_alias(
     return None
 
 
+# Tuned against real garbled transcripts, not picked by feel. At 0.75 the observed
+# mis-hearings of "اوبسيديان" ("اكسيديا" 0.80, "بسيدياني" 0.88, "ابسيد بع" 0.77) and of
+# other apps ("الواتسب" 0.93, "كرومم" 0.89) all resolve, while a mis-hearing that would
+# have resolved to the WRONG app ("فيلاكسي" -> vscode, 0.60) stays below the line.
+_FUZZY_CUTOFF = 0.75
+# ...but a cutoff alone is not enough: "النوتس" (obsidian) and "الواتس" (whatsapp) are
+# 0.83 similar to each other, differing by one letter, so a garbled input can sit close
+# to two different apps at once. Acting on that would close or launch the wrong
+# application. When the top two candidates are different apps within this margin, the
+# input is treated as ambiguous and refused instead.
+_FUZZY_AMBIGUITY_MARGIN = 0.08
+# Very short inputs are too easy to match against everything, so they are never fuzzed.
+_FUZZY_MIN_LENGTH = 4
+
+
+def _fuzzy_resolve_app(
+    aliases: dict[str, AppAlias], spoken_name: str
+) -> tuple[str, AppAlias] | None:
+    """Best-effort match for app names that speech-to-text garbled.
+
+    Only used after exact matching fails. CTC recognizers have no internal language
+    model, so they spell phonetically and inconsistently -- "اوبسيديان" came back as
+    "اكسيديا", "بسيدياني" and "ابسيد بع" across three separate utterances of the same
+    word. Enumerating those variants as aliases cannot keep up; matching approximately
+    can, provided it refuses when the answer is not clear-cut.
+    """
+    target = normalize_text(spoken_name)
+    if len(target) < _FUZZY_MIN_LENGTH:
+        return None
+
+    best_per_key: dict[str, float] = {}
+    for key, alias in aliases.items():
+        best_per_key[key] = max(
+            (
+                difflib.SequenceMatcher(None, target, normalize_text(form)).ratio()
+                for form in alias.surface_forms
+            ),
+            default=0.0,
+        )
+
+    ranked = sorted(best_per_key.items(), key=lambda item: item[1], reverse=True)
+    if not ranked or ranked[0][1] < _FUZZY_CUTOFF:
+        return None
+    if len(ranked) > 1 and (ranked[0][1] - ranked[1][1]) < _FUZZY_AMBIGUITY_MARGIN:
+        return None  # too close to call between two different apps -- refuse
+
+    key = ranked[0][0]
+    return key, aliases[key]
+
+
 def _resolve_hyprland_action(
     aliases: dict[str, HyprlandActionAlias], spoken_name: str
 ) -> HyprlandActionAlias | None:
@@ -456,23 +507,24 @@ class Config(BaseModel):
         default_factory=lambda: dict(DEFAULT_HYPRLAND_ACTIONS)
     )
 
-    def resolve_app(self, spoken_name: str) -> AppAlias | None:
+    def _resolve_app_entry(self, spoken_name: str) -> tuple[str, AppAlias] | None:
         result = _resolve_alias(self.apps, spoken_name)
-        if result is None:
-            return None
-        alias = result[1]
-        return alias if isinstance(alias, AppAlias) else None
+        if result is not None and isinstance(result[1], AppAlias):
+            return result[0], result[1]
+        return _fuzzy_resolve_app(self.apps, spoken_name)
+
+    def resolve_app(self, spoken_name: str) -> AppAlias | None:
+        entry = self._resolve_app_entry(spoken_name)
+        return entry[1] if entry else None
 
     def resolve_app_window_class(self, spoken_name: str) -> str | None:
         """Best-effort Hyprland window `class` for a spoken app name -- the alias's
         explicit `window_class` if set, else the alias's own registry key as a fallback
         guess (correct for many simple apps, e.g. "spotify", but not guaranteed)."""
-        result = _resolve_alias(self.apps, spoken_name)
-        if result is None:
+        entry = self._resolve_app_entry(spoken_name)
+        if entry is None:
             return None
-        key, alias = result
-        if not isinstance(alias, AppAlias):
-            return None
+        key, alias = entry
         return alias.window_class or key
 
     def resolve_package(self, spoken_name: str) -> PackageAlias | None:
