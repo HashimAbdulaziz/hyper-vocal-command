@@ -47,6 +47,14 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             # Egyptian Arabic, including the concept words users reach for instead of the
             # product name ("the notes app", "the vault").
             "اوبسيديان",
+            # Real mis-hearings observed in live Egyptian-Arabic testing -- whisper drops
+            # or mangles the opening alef and the ـيان ending. Deterministic backstop for
+            # when the classifier passes the garbled word straight through.
+            "وبسيديان",
+            "وبسيدين",
+            "وبسينية",
+            "ابسيديان",
+            "اوبسيدين",
             "النوتس",
             "نوتس",
             "الملاحظات",

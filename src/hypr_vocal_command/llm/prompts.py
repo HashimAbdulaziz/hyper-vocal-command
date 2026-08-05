@@ -30,6 +30,19 @@ heard as "putify"). If a garbled word is phonetically close to a known app name,
 it to that app name in `app_name` rather than passing the garbled text through or giving \
 up as UNRECOGNIZED.
 
+CRITICAL: only do that when the garbled word actually SOUNDS LIKE that specific app. \
+Match it on its own sounds -- never fall back to whichever app is most familiar or \
+appears most often in these examples. Opening the wrong application is far worse than \
+doing nothing, because it looks like the command succeeded. This applies ONLY to the \
+app name itself: unusual, wordy or slangy phrasing around a clearly recognizable app \
+name is fine and should still be classified normally.
+"افتح لنا وبسيدين" -> OPEN_APP {{"app_name": "obsidian"}} ("وبسيدين"/"وبسينية" are \
+mis-hearings of "اوبسيديان" (obsidian) -- they sound like obsidian, NOT like whatsapp)
+"كنت عايز ابص على الواتس" -> OPEN_APP {{"app_name": "whatsapp"}} (roundabout phrasing, \
+but "الواتس" is a clearly recognizable app name -- classify it normally)
+"افتح لي البرنامج بتاعي" -> UNRECOGNIZED (no app name at all, just "my program" -- do \
+NOT guess whatsapp or any other familiar app merely because an "open" verb is present)
+
 Examples:
 "open a terminal" -> OPEN_TERMINAL
 "show me my files" -> OPEN_FILE_MANAGER
@@ -118,7 +131,10 @@ Recognize the ACTION VERB and the APP NAME, ignore everything else. Put the app 
 resolve. Verb patterns:
 - OPEN (افتح، افتحلي، شغل، شغلي، هات، هاتلي، طلعلي، ادخل على، ابدأ، عايز افتح، محتاج افتح)
 - CLOSE (اقفل، اقفله، شيل، اطفي، اخرج من، اطلع من، انهي، خلاص كفايه) -- note that \
-"اطلع من X" / "اخرج من X" mean "close app X" (CLOSE_APP), never a window-manager action
+"اطلع من X" / "اخرج من X" mean "close app X" (CLOSE_APP), never a window-manager action. \
+Egyptian speakers pronounce "اقفل" with a glottal stop, so speech-to-text often garbles \
+it into "اي افقي"، "اففي"، "افقي"، "اقفي"، "اي اقفل" -- when one of those appears before \
+an app name, treat it as "اقفل" (close), not as an unrecognized word.
 - FULLSCREEN (كبر الشاشه، افرد الشاشه، فول سكرين، الشاشه كامله)
 - MEDIA play (عايز اسمع، شغل الاغاني، سمعنا، شغلنا حاجه نسمعها، هات مزيكا)
 - MEDIA pause (وقف الاغاني، اقفل المزيكا، اطفي المزيكا، كفايه مزيكا، صدعت)

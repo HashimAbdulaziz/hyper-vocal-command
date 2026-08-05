@@ -36,7 +36,14 @@ _GENERIC_EXAMPLES_AR = (
     "افتح التيرمينال",
     "شغل سبوتيفاي",
     "افتح الواتس",
+    # "اقفل" is repeated across several phrasings on purpose. Egyptian Arabic realizes
+    # ق as a glottal stop, so "اقفل" is spoken closer to "أ'فل" -- whisper, trained
+    # mostly on Modern Standard Arabic where ق is a hard /q/, mis-hears it as "اي اففي"
+    # or "افقي". Priming the written form repeatedly biases the decoder back toward it.
     "اقفل الواتس",
+    "اقفل اوبسيديان",
+    "اقفل التيرمينال",
+    "اقفل الشاشه دي",
     "روح للورك سبيس اتنين",
     "كبر الشاشه",
     "عايز اسمع اغاني",
