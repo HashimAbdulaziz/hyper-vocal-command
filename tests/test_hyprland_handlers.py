@@ -144,3 +144,78 @@ def test_hyprland_action_tolerates_llm_invented_slugs_and_bare_words(monkeypatch
     assert hyprland_action(HyprlandActionArgs(action="toggle_floating"), Config()).ok is True
     assert hyprland_action(HyprlandActionArgs(action="fullscreen"), Config()).ok is True
     assert hyprland_action(HyprlandActionArgs(action="close"), Config()).ok is True
+
+
+def _fake_run_with_active_window(calls, active: dict | None):
+    """subprocess.run stub that answers `hyprctl activewindow -j` with `active` and
+    records every other dispatch into `calls`."""
+    import json as _json
+
+    def fake_run(cmd, **kwargs):
+        if "activewindow" in cmd:
+            return subprocess.CompletedProcess(cmd, 0, _json.dumps(active or {}), "")
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "ok", "")
+
+    return fake_run
+
+
+def test_chrome_tab_action_targets_the_focused_window_by_address(monkeypatch):
+    # With several Chrome windows open, a bare class selector acts on whichever one
+    # Hyprland returns first -- which may not be the one in front of the user. The tab
+    # actions must address the FOCUSED window explicitly.
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        _fake_run_with_active_window(
+            calls, {"class": "google-chrome", "address": "0xdeadbeef"}
+        ),
+    )
+
+    result = hyprland_action(HyprlandActionArgs(action="close this tab"), Config())
+
+    assert result.ok is True
+    assert calls == [["hyprctl", "dispatch", "sendshortcut", "CTRL,W,address:0xdeadbeef"]]
+
+
+def test_chrome_tab_action_refuses_when_chrome_is_not_focused(monkeypatch):
+    # Refusing is the safe outcome: firing Ctrl+W at some other Chrome window would
+    # destroy a page the user never looked at, while appearing to succeed.
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        _fake_run_with_active_window(calls, {"class": "code", "address": "0xabc"}),
+    )
+
+    result = hyprland_action(HyprlandActionArgs(action="close this tab"), Config())
+
+    assert result.ok is False
+    assert "focused" in result.message
+    assert calls == []  # nothing dispatched at all
+
+
+def test_chrome_tab_action_refuses_when_nothing_is_focused(monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(subprocess, "run", _fake_run_with_active_window(calls, {}))
+
+    result = hyprland_action(HyprlandActionArgs(action="new tab"), Config())
+
+    assert result.ok is False
+    assert calls == []
+
+
+def test_plain_window_actions_do_not_query_the_active_window(monkeypatch):
+    # Only aliases with target_active_class pay for the extra hyprctl round-trip;
+    # killactive and friends already act on the focused window implicitly.
+    seen: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    assert hyprland_action(HyprlandActionArgs(action="close this window"), Config()).ok
+    assert seen == [["hyprctl", "dispatch", "killactive"]]
