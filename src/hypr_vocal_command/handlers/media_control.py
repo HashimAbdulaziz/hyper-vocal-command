@@ -29,7 +29,7 @@ _SPOTIFY_FLATPAK_ID = "com.spotify.Client"
 
 
 class MediaControlArgs(BaseModel):
-    action: Literal["play", "pause", "toggle"]
+    action: Literal["play", "pause", "toggle", "next", "previous"]
 
 
 def _spotify_status() -> str | None:
@@ -71,19 +71,37 @@ def _pause() -> ExecutionResult:
     return ExecutionResult(ok=True, message="Paused Spotify.")
 
 
+def _skip(direction: str) -> ExecutionResult:
+    """`playerctl next`/`previous`, mirroring the XF86AudioNext/Prev binds. Unlike
+    "play", this never launches Spotify: skipping presupposes something is already
+    playing, so a launch would be a surprising response to "next track"."""
+    result = subprocess.run(
+        ["playerctl", "-p", "spotify", direction], capture_output=True, text=True, check=False
+    )
+    if result.returncode != 0:
+        return ExecutionResult(ok=False, message="Spotify isn't playing anything to skip.")
+    word = "next" if direction == "next" else "previous"
+    return ExecutionResult(ok=True, message=f"Skipped to the {word} track.")
+
+
 @intent_handler(
     "MEDIA_CONTROL",
     MediaControlArgs,
     description=(
         "Control music playback: 'play' (resume, or launch Spotify if it isn't running "
-        "yet), 'pause'/'stop', or 'toggle' (only when no explicit play/pause verb is "
+        "yet), 'pause'/'stop', 'toggle' (only when no explicit play/pause verb is "
         "given -- e.g. the bare word 'music' alone, meaning flip whatever state it's "
-        "currently in). Use for phrases like 'play music', 'pause music', 'stop music', "
-        "'resume music', 'music'. NOT for opening Spotify by name with no playback "
-        "intent (use OPEN_APP{app_name:'spotify'} for that)."
+        "currently in), 'next' (skip forward a track), or 'previous' (go back a track). "
+        "Use for phrases like 'play music', 'pause music', 'stop music', "
+        "'resume music', 'music', 'next song', 'skip this', 'go back a song'. NOT for "
+        "opening Spotify by name with no playback intent (use OPEN_APP{app_name:"
+        "'spotify'} for that), and NOT for system volume (use SYSTEM_CONTROL)."
     ),
 )
 def media_control(args: MediaControlArgs, config: Config) -> ExecutionResult:
+    if args.action in ("next", "previous"):
+        return _skip(args.action)
+
     if args.action == "pause":
         return _pause()
 
