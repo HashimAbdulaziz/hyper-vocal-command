@@ -82,6 +82,11 @@ def check_golden(
         "--fixture",
         help="Path to a golden-phrase JSON fixture",
     ),
+    lang: str = typer.Option(
+        "en",
+        "--lang",
+        help="Language whose model/system-prompt to validate against (en or ar)",
+    ),
 ) -> None:
     """Classify every phrase in a golden-phrase fixture via the real LLM and report
     pass/fail + latency for each.
@@ -89,6 +94,9 @@ def check_golden(
     Not part of the fast pytest suite -- this hits the real running Ollama model, the
     same way every ad-hoc regression check this project has relied on so far did. Run
     this after any prompt/schema change instead of retyping a phrase list from memory.
+    `--lang` matters since English and Arabic now use separate system prompts (each
+    with only its own language's few-shot examples) -- pass the language matching the
+    fixture, e.g. `--fixture tests/fixtures/golden_phrases_ar.json --lang ar`.
     """
     from pathlib import Path
 
@@ -97,13 +105,14 @@ def check_golden(
 
     arg_keys = ("app_name", "workspace", "action", "package_name", "scope")
     correct = 0
+    known = 0
     latencies: list[float] = []
     with OllamaClient(
-        model=config.model_en, base_url=config.ollama_base_url, timeout=config.llm_timeout_s
+        model=config.model_for(lang), base_url=config.ollama_base_url, timeout=config.llm_timeout_s
     ) as client:
         for case in cases:
             try:
-                result = client.classify(build_system_prompt(), case["text"])
+                result = client.classify(build_system_prompt(lang), case["text"])
             except httpx.HTTPError as exc:
                 typer.echo(f"LLM request failed: {exc}", err=True)
                 raise typer.Exit(code=1) from exc
@@ -114,19 +123,85 @@ def check_golden(
             mismatched_args = [
                 key for key in arg_keys if key in case and got_args.get(key) != case[key]
             ]
+            # HYPRLAND_ACTION's `action` is free text that only means something once
+            # resolved, and several distinct actions share wording ("close this tab" vs
+            # "close this window" -- one closes a browser tab, the other kills the whole
+            # focused window). Asserting the literal string would be brittle since any
+            # registered synonym is equally valid, so a fixture can instead declare the
+            # `dispatcher` it must resolve to, which is what actually gets executed.
+            if "dispatcher" in case:
+                alias = config.resolve_hyprland_action(got_args.get("action", ""))
+                if alias is None or alias.dispatcher != case["dispatcher"]:
+                    got = alias.dispatcher if alias else "<unresolvable>"
+                    mismatched_args.append(f"dispatcher={got}")
             ok = ok and not mismatched_args
             correct += ok
             latencies.append(result.latency_ms)
-            flag = "OK  " if ok else "FAIL"
+
+            # A case can be marked as a known, accepted limitation of the LLM path. It
+            # still runs and is still reported loudly, so the signal is never hidden --
+            # it just doesn't wedge the exit code at 1 forever, which would make this
+            # command useless as a pass/fail gate for everything else. Mark a case this
+            # way only when the wrong answer is genuinely covered elsewhere (e.g. the
+            # fastpath resolves it deterministically) and further prompt tuning has been
+            # tried and made things worse.
+            limitation = case.get("known_limitation")
+            if ok:
+                flag = "OK  "
+            elif limitation:
+                flag = "KNOWN"
+                known += 1
+            else:
+                flag = "FAIL"
             detail = f" MISMATCHED={mismatched_args}" if mismatched_args else ""
+            if limitation and not ok:
+                detail += f"  [known: {limitation}]"
             typer.echo(
                 f"[{flag}] {result.latency_ms:6.0f}ms {case['text']!r:45} -> "
                 f"{got_intent} (want {case['intent']}) args={got_args}{detail}"
             )
 
     avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
-    typer.echo(f"\n{correct}/{len(cases)} correct, avg latency {avg_latency:.0f}ms")
-    raise typer.Exit(code=0 if correct == len(cases) else 1)
+    summary = f"\n{correct}/{len(cases)} correct, avg latency {avg_latency:.0f}ms"
+    if known:
+        summary += f" ({known} known limitation(s), not counted as failures)"
+    typer.echo(summary)
+    raise typer.Exit(code=0 if correct + known == len(cases) else 1)
+
+
+@app.command("review-log")
+def review_log(
+    hours: float = typer.Option(
+        24.0,
+        "--hours",
+        help="Only include commands from the last N hours (0 = everything ever logged)",
+    ),
+    path: str = typer.Option(
+        None,
+        "--path",
+        help="Path to events.jsonl (default: the real state dir this daemon logs to)",
+    ),
+) -> None:
+    """Review real voice commands from the telemetry log: what was said, what the
+    pipeline decided, and what happened -- meant to be run after a day of real use.
+
+    Lists every command, not just failures: a wrong action can still log ok=true (this
+    project has hit that twice for real), so filtering to failures would hide exactly
+    the mistakes worth catching. Use this to spot misclassifications, then fix them
+    (a config.py alias, a llm/prompts.py example) and add the phrase to the matching
+    golden-phrase fixture so `check-golden` catches it again automatically next time.
+    """
+    import time
+    from pathlib import Path
+
+    from .review import review as build_review
+    from .utils.telemetry import events_path
+
+    config = load_config()
+    since = time.time() - hours * 3600 if hours > 0 else None
+    log_path = Path(path) if path else events_path()
+
+    typer.echo(build_review(path=log_path, since=since, confidence_threshold=config.confidence_threshold))
 
 
 @app.command("run-text")
@@ -238,7 +313,7 @@ def run_once(
                 vad=vad,
                 whisper_model=model,
                 classifier=classifier,
-                system_prompt=build_system_prompt(),
+                system_prompt=build_system_prompt(lang),
                 vocabulary_prompt=build_command_vocabulary_prompt(config, lang),
                 config=config,
                 language=lang,

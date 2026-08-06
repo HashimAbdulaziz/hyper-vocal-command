@@ -1,3 +1,5 @@
+import pytest
+
 from hypr_vocal_command.audio.vocabulary import build_command_vocabulary_prompt
 from hypr_vocal_command.config import Config
 
@@ -37,13 +39,31 @@ def test_english_prompt_contains_no_arabic():
     assert not any("؀" <= ch <= "ۿ" for ch in prompt)
 
 
-def test_arabic_prompt_contains_arabic_and_stays_small():
+def test_arabic_prompt_contains_arabic():
     prompt = build_command_vocabulary_prompt(Config(), "ar")
     assert "الواتس" in prompt
     assert "سبوتيفاي" in prompt
     # Egyptian Arabic is heavily code-switched, so core English app names stay primed too.
     assert "spotify" in prompt
+
+
+@pytest.mark.parametrize("language", ["en", "ar"])
+def test_prompt_stays_within_whispers_context_budget(language):
+    # Both languages, not just Arabic: adding tile/tab/group aliases once pushed the
+    # ENGLISH prompt to ~532 approximate tokens while only the Arabic size was asserted,
+    # so the English regression went unnoticed. Whisper's context is 448 tokens total,
+    # shared between this prompt and the decoded output.
+    prompt = build_command_vocabulary_prompt(Config(), language)
     assert len(prompt) // 4 < 448
+
+
+def test_prompt_omits_the_mis_hearing_backstop_forms():
+    # Priming and resolution want opposite things from the alias list: resolution needs
+    # every garbled variant registered, priming needs the decoder biased toward the
+    # correct spelling. Surface forms are canonical-first, so only the head is primed.
+    prompt = build_command_vocabulary_prompt(Config(), "en")
+    assert "obsidian" in prompt
+    assert "putify" not in prompt  # a registered mis-hearing of "spotify"
 
 
 def test_prompt_does_not_include_the_full_scanned_app_catalog():

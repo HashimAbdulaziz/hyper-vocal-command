@@ -17,9 +17,25 @@ Arabic surface forms were registered alongside the English ones, emitting every 
 regardless of language pushed this past 540 tokens -- already over the 448-token
 ceiling before any speech is decoded. Priming an English utterance with Arabic text (or
 the reverse) also actively biases the decoder toward the wrong script.
+
+Only the first few surface forms per alias per script are emitted, for a reason beyond
+budget: priming and resolution want *opposite* things from the alias list. Resolution
+needs every mis-hearing enumerated ("وبسيدين", "ابسيد", "putify") so garbled output
+still matches something; priming needs the decoder biased toward the CORRECT spelling,
+and feeding it a pile of known-wrong spellings works directly against that. Surface
+forms are ordered canonical-first throughout config.py, so taking the head of each list
+keeps the real names and drops the mis-hearing backstops -- which is what this prompt
+should contain anyway.
 """
 
 from ..config import DEFAULT_APPS, Config
+
+# Per-alias, per-script cap. At 2 the English prompt is ~293 and the Arabic ~186
+# approximate tokens, both well inside whisper's 448-token context (shared with decoded
+# output), with room for more aliases before this needs revisiting. 2 rather than 3
+# because the mis-hearing backstops sit close behind the canonical name on the aliases
+# that have them -- at 3, "putify" was still reaching the prompt.
+_MAX_FORMS_PER_ALIAS = 2
 
 _GENERIC_EXAMPLES_EN = (
     "open a terminal",
@@ -68,8 +84,10 @@ def build_command_vocabulary_prompt(config: Config, language: str = "en") -> str
 
     phrases: list[str] = list(generic)
     for action_alias in config.hyprland_actions.values():
-        phrases.extend(f for f in action_alias.surface_forms if _is_arabic(f) == want_arabic)
+        matching = [f for f in action_alias.surface_forms if _is_arabic(f) == want_arabic]
+        phrases.extend(matching[:_MAX_FORMS_PER_ALIAS])
     for app_alias in DEFAULT_APPS.values():
-        phrases.extend(f for f in app_alias.surface_forms if _is_arabic(f) == want_arabic)
+        matching = [f for f in app_alias.surface_forms if _is_arabic(f) == want_arabic]
+        phrases.extend(matching[:_MAX_FORMS_PER_ALIAS])
 
     return ". ".join(dict.fromkeys(phrases)) + "."

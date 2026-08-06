@@ -1,10 +1,22 @@
 """System prompt templates. The per-intent descriptions are pulled from the registry (not
 hand-duplicated here) so a new intent's prompt guidance can never drift from its schema.
+
+The prompt is split into a shared core (classifier rules that apply regardless of
+language) plus one few-shot example block per language, rather than always sending
+both. Measured directly against live Ollama: generation speed on this GPU scales mildly
+with context length (memory-bandwidth-bound attention, no tensor cores on this Pascal
+card) -- an English call was paying for the unused Arabic examples and vice versa, for
+a real (if modest) latency cost on every single call. Splitting them saves real
+per-token generation time without dropping any language-specific guidance, since each
+language's own examples (workspace-number disambiguation, CLOSE_APP-vs-HYPRLAND_ACTION
+safety, etc.) are self-contained within its own block. Re-validated against both the
+54-phrase English and 52-phrase Arabic golden fixtures after the split -- no
+regressions.
 """
 
 from ..registry import REGISTRY
 
-_TEMPLATE = """You are an intent classifier for a Linux voice command system. Given a single \
+_CORE = """You are an intent classifier for a Linux voice command system. Given a single \
 spoken user command, output ONLY a JSON object matching the required schema -- no extra \
 text, no markdown.
 
@@ -41,8 +53,9 @@ mis-hearings of "اوبسيديان" (obsidian) -- they sound like obsidian, NOT
 "كنت عايز ابص على الواتس" -> OPEN_APP {{"app_name": "whatsapp"}} (roundabout phrasing, \
 but "الواتس" is a clearly recognizable app name -- classify it normally)
 "افتح لي البرنامج بتاعي" -> UNRECOGNIZED (no app name at all, just "my program" -- do \
-NOT guess whatsapp or any other familiar app merely because an "open" verb is present)
+NOT guess whatsapp or any other familiar app merely because an "open" verb is present)"""
 
+_ENGLISH_EXAMPLES = """
 Examples:
 "open a terminal" -> OPEN_TERMINAL
 "show me my files" -> OPEN_FILE_MANAGER
@@ -122,7 +135,24 @@ AND switching workspace -- this system can only do one action, so silently doing
 one half would be wrong)
 "open obsidian and close the terminal" -> UNRECOGNIZED (two separate actions chained \
 together, not one)
+"turn the volume up" -> SYSTEM_CONTROL {{"action": "volume_up"}}
+"louder" -> SYSTEM_CONTROL {{"action": "volume_up"}}
+"mute" -> SYSTEM_CONTROL {{"action": "volume_mute"}} (system audio, not the music player)
+"mute my mic" -> SYSTEM_CONTROL {{"action": "mic_mute"}} (the microphone specifically)
+"dim the screen" -> SYSTEM_CONTROL {{"action": "brightness_down"}}
+"make the screen brighter" -> SYSTEM_CONTROL {{"action": "brightness_up"}}
+"next song" -> MEDIA_CONTROL {{"action": "next"}} (skipping a TRACK is playback, not \
+system volume)
+"skip this track" -> MEDIA_CONTROL {{"action": "next"}}
+"go back a song" -> MEDIA_CONTROL {{"action": "previous"}}
+"move this window to workspace 2" -> MOVE_TO_WORKSPACE {{"workspace": 2}} (takes the \
+window along)
+"send this to workspace 3" -> MOVE_TO_WORKSPACE {{"workspace": 3}}
+"go to workspace 2" -> WORKSPACE_SWITCH {{"workspace": 2}} (just navigating -- no window \
+is moved. The move/send/take verb plus a reference to "this window" is what separates \
+MOVE_TO_WORKSPACE from WORKSPACE_SWITCH)"""
 
+_ARABIC_BLOCK = """
 Commands may also be spoken in Egyptian Arabic, often mixed with English words \
 ("Arabizi"/code-switching), with heavy dialect filler that carries no meaning and must \
 be ignored: يسطا، يا صاحبي، بقولك إيه، كده، بقى، يبني، لو سمحت، ممكن، عايز، محتاج، كنت عايز.
@@ -138,6 +168,29 @@ an app name, treat it as "اقفل" (close), not as an unrecognized word.
 - FULLSCREEN (كبر الشاشه، افرد الشاشه، فول سكرين، الشاشه كامله)
 - MEDIA play (عايز اسمع، شغل الاغاني، سمعنا، شغلنا حاجه نسمعها، هات مزيكا)
 - MEDIA pause (وقف الاغاني، اقفل المزيكا، اطفي المزيكا، كفايه مزيكا، صدعت)
+- MEDIA skip a TRACK -> MEDIA_CONTROL "next" (اللي بعده، اللي بعدها، غير الاغنيه، \
+الاغنيه اللي بعدها) or "previous" (اللي فاتت، رجع الاغنيه، الاغنيه اللي فاتت). This \
+changes the SONG -- never confuse it with volume.
+- SYSTEM volume/mic/brightness -> SYSTEM_CONTROL. Louder (علي الصوت، زود الصوت، ارفع \
+الصوت) = "volume_up"; quieter (وطي الصوت، قلل الصوت، نزل الصوت) = "volume_down"; \
+(اكتم الصوت، اسكت) = "volume_mute"; the MIC specifically (اكتم المايك، اقفل المايك) = \
+"mic_mute"; screen light (نور الشاشه، زود النور، زود الاضاءه) = "brightness_up", \
+(قلل النور، وطي النور، قلل الاضاءه) = "brightness_down".
+- MOVE the current window to a workspace -> MOVE_TO_WORKSPACE. The verbs ابعت، ابعتها، \
+انقل، حط، وديها mean "send/put THIS window there" and take the window along, unlike \
+روح/اروح (WORKSPACE_SWITCH), which only navigates and moves nothing.
+- A CLOSE request means one of three different things; the NOUN decides which, so read \
+the noun carefully and do not pick a wider one than was asked for:
+  * طايل/تايل/ويندو/شاشه/بلاطة/بلطة/باطة/نادج/بادج/بدج (all mis-hearings of "tile"/ \
+"window") -> action "close this window"
+  * تاب/تابة/طاب/صفحة/tab (a browser TAB) -> action "close this tab"
+  * a real APP NAME (كروم، الواتس، اوبسيديان) -> CLOSE_APP
+- UNGROUP (فك الجروب/القروب/الكروب -- same borrowed word spelled three ways) -> action \
+"ungroup this window"; a trailing "بتاع ... دي" does not change it. GROUP -> action \
+"group this window". Opening a browser tab (افتح تابة جديدة، افتح تاب، افتحلي تاب) -> \
+action "new tab" -- an OPEN request must never become CLOSE_APP or open Chrome itself.
+- "الشاشه" alone is ambiguous -- the VERB decides: كبر/افرد = fullscreen; نور/زود النور \
+= brightness (SYSTEM_CONTROL); اقفل ... دي = close the focused window.
 
 Arabic examples:
 "افتح ال terminal" -> OPEN_TERMINAL
@@ -174,9 +227,39 @@ names an app into a "close the focused window" action -- that would close some u
 window instead of the app the user asked for.)
 "كبر الشاشه" -> HYPRLAND_ACTION {{"action": "fullscreen this"}}
 "فول سكرين" -> HYPRLAND_ACTION {{"action": "fullscreen this"}}
-"روح للورك سبيس اتنين" -> WORKSPACE_SWITCH {{"workspace": 2}}"""
+"روح للورك سبيس اتنين" -> WORKSPACE_SWITCH {{"workspace": 2}}
+"روح للورك سباس الاولى" -> WORKSPACE_SWITCH {{"workspace": 1}} ("سباس"/"سبس" are just \
+mis-hearings of "سبيس" (space); "الاولى" is an ORDINAL -- "the first" -- meaning \
+workspace 1, same as a cardinal number would)
+"روح لورك سباس واحد" -> WORKSPACE_SWITCH {{"workspace": 1}}
+"اقفل النادج دي" -> HYPRLAND_ACTION {{"action": "close this window"}} ("نادج"/"بلاطة"/ \
+"طايل" are mis-hearings of tile/window, not app names -- and NOT a browser tab either)
+"اقفل التابة دي" -> HYPRLAND_ACTION {{"action": "close this tab"}} (only when the noun is \
+تاب/تابة/صفحة. Chrome is not named, so never CLOSE_APP)
+"فك الجروب بتاع التايل دي" -> HYPRLAND_ACTION {{"action": "ungroup this window"}}
+"علي الصوت" -> SYSTEM_CONTROL {{"action": "volume_up"}} (علي/زود/ارفع = raise)
+"وطي الصوت شويه" -> SYSTEM_CONTROL {{"action": "volume_down"}} (وطي/قلل/نزل = LOWER, the \
+opposite of علي -- never mix these two directions up)
+"اكتم المايك" -> SYSTEM_CONTROL {{"action": "mic_mute"}} (المايك = the microphone, so \
+mic_mute, NOT volume_mute and NOT pausing the music)
+"نور الشاشه شويه" -> SYSTEM_CONTROL {{"action": "brightness_up"}} (brightness, not \
+fullscreen, despite both mentioning "الشاشه")
+"غير الاغنيه" -> MEDIA_CONTROL {{"action": "next"}} (changes the SONG, not the volume)
+"الاغنيه اللي فاتت" -> MEDIA_CONTROL {{"action": "previous"}}
+"ابعت الويندو دي للورك سبيس اتنين" -> MOVE_TO_WORKSPACE {{"workspace": 2}} (ابعت/حط/انقل/ \
+وديها = send THIS window there, so it comes along -- contrast "روح للورك سبيس اتنين", \
+which only navigates and moves nothing)
+"حط دي في الورك سبيس تلاته" -> MOVE_TO_WORKSPACE {{"workspace": 3}}
+"روح لليمين" -> HYPRLAND_ACTION {{"action": "focus right"}} (يمين = right, شمال = left; \
+use the English words right/left/up/down in `action`, never "north"/"south")"""
 
 
-def build_system_prompt() -> str:
+_EXAMPLE_BLOCKS = {"en": _ENGLISH_EXAMPLES, "ar": _ARABIC_BLOCK}
+
+
+def build_system_prompt(language: str = "en") -> str:
+    if language not in _EXAMPLE_BLOCKS:
+        raise ValueError(f"unsupported language {language!r}")
     intent_lines = "\n".join(f"- {name}: {spec.description}" for name, spec in sorted(REGISTRY.items()))
-    return _TEMPLATE.format(intent_lines=intent_lines)
+    template = _CORE + _EXAMPLE_BLOCKS[language]
+    return template.format(intent_lines=intent_lines)

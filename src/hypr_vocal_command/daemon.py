@@ -95,7 +95,12 @@ class Daemon:
         # Warm resources: built once here, reused for every future connection.
         self._vad = SileroVAD()
         self._whisper_model = load_model()
-        self._system_prompt = build_system_prompt()
+        # One prompt per language, not one shared prompt -- each call otherwise paid
+        # generation-time cost for the other language's unused few-shot examples (see
+        # llm/prompts.py's docstring for the measured latency rationale).
+        self._system_prompts = {
+            language: build_system_prompt(language) for language in SUPPORTED_LANGUAGES
+        }
 
         # Keyed by model name, not by language: English and Egyptian Arabic currently
         # share one model (see Config.model_ar), so this is normally a single warm
@@ -212,7 +217,7 @@ class Daemon:
             vad=self._vad,
             whisper_model=self._whisper_model,
             classifier=self._classifiers[self.config.model_for(language)],
-            system_prompt=self._system_prompt,
+            system_prompt=self._system_prompts[language],
             vocabulary_prompt=self._vocabulary_prompts[language],
             arabic_transcriber=self._arabic_transcriber,
             config=self.config,
