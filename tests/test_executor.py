@@ -212,3 +212,114 @@ def test_transcript_is_threaded_into_telemetry(monkeypatch, config, tmp_path):
     events_path = tmp_path / "events.jsonl"
     last_event = json.loads(events_path.read_text().strip().splitlines()[-1])
     assert last_event["transcript"] == "open a terminal"
+
+
+def test_language_is_threaded_into_telemetry(monkeypatch, config, tmp_path):
+    # Recorded so a later log review (review.py) can tell the English and Egyptian
+    # Arabic pipelines apart per command, not guess from the transcript's script alone.
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: object())
+
+    execute(
+        {"schema_version": 1, "intent": "OPEN_TERMINAL", "confidence": 0.95, "args": {}},
+        config=config,
+        transcript="open a terminal",
+        language="en",
+    )
+
+    events_path = tmp_path / "events.jsonl"
+    last_event = json.loads(events_path.read_text().strip().splitlines()[-1])
+    assert last_event["language"] == "en"
+
+
+def test_language_omitted_from_telemetry_when_not_given(monkeypatch, config, tmp_path):
+    # Older log lines (and any future call site that doesn't know the language) must not
+    # gain a fabricated "language": null field -- absence should mean absence.
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: object())
+
+    execute(
+        {"schema_version": 1, "intent": "OPEN_TERMINAL", "confidence": 0.95, "args": {}},
+        config=config,
+    )
+
+    events_path = tmp_path / "events.jsonl"
+    last_event = json.loads(events_path.read_text().strip().splitlines()[-1])
+    assert "language" not in last_event
+
+
+def test_refuses_app_name_the_model_invented(monkeypatch, config, tmp_path):
+    # Real captured failure: "take me back to the previous workspace" returned
+    # CLOSE_APP{chrome} and actually closed the browser, logging ok=true. Nothing in the
+    # transcript sounds like chrome, so the name was invented and must not be acted on.
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("must not dispatch"))
+
+    result = execute(
+        {
+            "schema_version": 1,
+            "intent": "CLOSE_APP",
+            "confidence": 0.99,
+            "args": {"app_name": "chrome"},
+        },
+        config=config,
+        transcript="رجعني الوركز بيس اللي قبلها",
+    )
+
+    assert result.ok is False
+    last = json.loads((tmp_path / "events.jsonl").read_text().strip().splitlines()[-1])
+    assert last["reason"] == "app_name_not_grounded_in_transcript"
+
+
+def test_allows_app_named_by_a_concept_word(monkeypatch, config):
+    # "المتصفح" (the browser) never contains the string "chrome", but it IS a registered
+    # surface form of it -- grounding must accept that, or every concept word breaks.
+    monkeypatch.setattr(
+        "hypr_vocal_command.handlers.open_app.shutil.which", lambda name: f"/usr/bin/{name}"
+    )
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: object())
+
+    result = execute(
+        {
+            "schema_version": 1,
+            "intent": "OPEN_APP",
+            "confidence": 0.9,
+            "args": {"app_name": "chrome"},
+        },
+        config=config,
+        transcript="يا صاحبي افتح المتصفح",
+    )
+
+    assert result.ok is True
+
+
+def test_allows_a_garbled_but_registered_app_name(monkeypatch, config):
+    # Mis-hearings are registered verbatim precisely so this check still passes for them.
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: object())
+
+    result = execute(
+        {
+            "schema_version": 1,
+            "intent": "OPEN_APP",
+            "confidence": 0.9,
+            "args": {"app_name": "obsidian"},
+        },
+        config=config,
+        transcript="افتح لنا وبسيدين",
+    )
+
+    assert result.ok is True
+
+
+def test_grounding_check_is_skipped_without_a_transcript(monkeypatch, config):
+    # debug-execute and other transcript-less callers must keep working unchanged.
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: object())
+
+    result = execute(
+        {
+            "schema_version": 1,
+            "intent": "OPEN_APP",
+            "confidence": 0.9,
+            "args": {"app_name": "obsidian"},
+        },
+        config=config,
+    )
+
+    assert result.ok is True
