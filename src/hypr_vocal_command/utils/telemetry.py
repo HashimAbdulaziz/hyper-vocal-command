@@ -12,8 +12,15 @@ def _state_dir() -> Path:
     return Path(xdg_state_home) / "hypr-vocal-command"
 
 
+def events_path() -> Path:
+    """Public accessor for the JSONL event log path -- used by `review.py` to read back
+    what `log_event()` has been writing, e.g. for a `review-log` CLI pass over a day of
+    real usage."""
+    return _state_dir() / "events.jsonl"
+
+
 def log_event(event: dict[str, Any]) -> None:
-    path = _state_dir() / "events.jsonl"
+    path = events_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     record = {"timestamp": time.time(), **event}
     with path.open("a") as f:
