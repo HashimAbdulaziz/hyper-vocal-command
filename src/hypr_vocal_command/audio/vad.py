@@ -102,7 +102,14 @@ class UtteranceConfig:
     # "Recorded X.Xs, transcribing..." even prints, so it was silently inflating every
     # invocation's perceived latency by a full extra second beyond what transcribe_ms/
     # llm_latency_ms/total_ms ever showed.
-    silence_timeout_s: float = 1.0
+    #
+    # Lowered again from 1.0s once the fastpath (fastpath.py) removed the LLM call from
+    # simple commands: with classification down to ~0.4ms and dispatch ~5ms, this wait
+    # became 82% of the entire end-to-end latency for an Arabic fastpath hit (1000ms of
+    # ~1215ms). It is now the only meaningful cost left. 0.7s keeps enough tolerance for
+    # a brief pause mid-phrase while cutting ~300ms off every command; override via
+    # Config.silence_timeout_s to tune by feel without editing code.
+    silence_timeout_s: float = 0.7
     max_duration_s: float = 30.0
     max_initial_silence_s: float = 10.0
 

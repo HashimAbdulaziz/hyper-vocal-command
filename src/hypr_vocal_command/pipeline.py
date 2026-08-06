@@ -17,6 +17,7 @@ from .audio.vad import SileroVAD, UtteranceConfig, record_utterance
 from .audio.wav2vec2_ctc import Wav2Vec2Transcriber
 from .config import Config
 from .executor import execute
+from .fastpath import try_fastpath
 from .llm.cache import CachedClassifier
 from .utils.notifier import notify
 
@@ -46,7 +47,7 @@ def run_pipeline(
 ) -> PipelineResult:
     pipeline_start = time.monotonic()
 
-    audio = record_utterance(vad, UtteranceConfig())
+    audio = record_utterance(vad, UtteranceConfig(silence_timeout_s=config.silence_timeout_s))
     if audio is None:
         return PipelineResult(
             ok=False,
@@ -93,6 +94,36 @@ def run_pipeline(
             total_ms=(time.monotonic() - pipeline_start) * 1000,
         )
 
+    # Tried before the LLM: a small, conservative set of unambiguous commands (see
+    # fastpath.py) can be dispatched with zero Ollama round-trip at all, so the common
+    # "open X"/"close X"/"go to workspace N" case feels instant rather than paying the
+    # ~2-2.5s generation cost every single time. Anything it doesn't confidently
+    # recognize returns None here and falls through to the LLM completely unchanged.
+    fastpath_envelope = try_fastpath(transcription.text, config)
+    if fastpath_envelope is not None:
+        notify(
+            "hypr-vocal-command",
+            f"Heard: {transcription.text!r} -> {fastpath_envelope['intent']} (instant)",
+        )
+        exec_result = execute(
+            fastpath_envelope,
+            config,
+            transcript=transcription.text,
+            language=language,
+            path="fastpath",
+        )
+        total_ms = (time.monotonic() - pipeline_start) * 1000
+        return PipelineResult(
+            ok=exec_result.ok,
+            message=exec_result.message,
+            transcript=transcription.text,
+            intent=fastpath_envelope["intent"],
+            confidence=fastpath_envelope["confidence"],
+            transcribe_ms=transcribe_ms,
+            llm_latency_ms=0.0,
+            total_ms=total_ms,
+        )
+
     try:
         result = classifier.classify(system_prompt, transcription.text)
     except httpx.HTTPError as exc:
@@ -120,6 +151,8 @@ def run_pipeline(
         raw_llm_response=result.raw_response,
         llm_latency_ms=result.latency_ms,
         transcript=transcription.text,
+        language=language,
+        path="llm",
     )
     total_ms = (time.monotonic() - pipeline_start) * 1000
     return PipelineResult(

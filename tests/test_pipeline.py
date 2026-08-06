@@ -87,9 +87,11 @@ def test_llm_http_error_is_caught_and_reported(monkeypatch):
         "hypr_vocal_command.pipeline.record_utterance",
         lambda vad, cfg: np.zeros(1600, dtype=np.int16),
     )
+    # Deliberately not "open a terminal" -- fastpath.py now matches that deterministically
+    # and would never reach the classifier at all, defeating this test's purpose.
     monkeypatch.setattr(
         "hypr_vocal_command.pipeline.transcribe",
-        lambda *a, **k: _FakeTranscription(text="open a terminal"),
+        lambda *a, **k: _FakeTranscription(text="do the special thing"),
     )
     classifier = _FakeClassifier(error=httpx.ConnectError("connection refused"))
 
@@ -97,7 +99,7 @@ def test_llm_http_error_is_caught_and_reported(monkeypatch):
 
     assert result.ok is False
     assert "LLM request failed" in result.message
-    assert result.transcript == "open a terminal"
+    assert result.transcript == "do the special thing"
 
 
 def test_full_success_path_executes_and_reports_all_fields(monkeypatch):
@@ -105,9 +107,11 @@ def test_full_success_path_executes_and_reports_all_fields(monkeypatch):
         "hypr_vocal_command.pipeline.record_utterance",
         lambda vad, cfg: np.zeros(1600, dtype=np.int16),
     )
+    # See the comment above -- must be a phrase fastpath.py defers on, so this test
+    # actually exercises the classifier/execute wiring rather than short-circuiting it.
     monkeypatch.setattr(
         "hypr_vocal_command.pipeline.transcribe",
-        lambda *a, **k: _FakeTranscription(text="open a terminal"),
+        lambda *a, **k: _FakeTranscription(text="do the special thing"),
     )
     monkeypatch.setattr(
         "hypr_vocal_command.pipeline.execute",
@@ -130,12 +134,12 @@ def test_full_success_path_executes_and_reports_all_fields(monkeypatch):
 
     assert result.ok is True
     assert result.message == "Opened terminal (kitty)."
-    assert result.transcript == "open a terminal"
+    assert result.transcript == "do the special thing"
     assert result.intent == "OPEN_TERMINAL"
     assert result.confidence == 0.95
     assert result.llm_latency_ms == 42.0
     assert result.total_ms > 0
-    assert classifier.calls == [("system prompt", "open a terminal")]
+    assert classifier.calls == [("system prompt", "do the special thing")]
 
 
 class _FakeArabicTranscriber:
@@ -202,3 +206,62 @@ def test_english_still_uses_whisper_even_when_ctc_is_available(monkeypatch):
 
     assert arabic.calls == 0
     assert result.transcript == "open a terminal"
+
+
+def test_fastpath_match_skips_the_llm_call_entirely(monkeypatch):
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.record_utterance",
+        lambda vad, cfg: np.zeros(1600, dtype=np.int16),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.transcribe",
+        lambda *a, **k: _FakeTranscription(text="open a terminal"),
+    )
+    captured = {}
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.execute",
+        lambda envelope, *a, **k: captured.update(envelope=envelope, kwargs=k)
+        or ExecutionResult(ok=True, message="Opened terminal (kitty)."),
+    )
+    classifier = _FakeClassifier(error=AssertionError("the LLM must not be called"))
+
+    result = run_pipeline(**_kwargs(classifier=classifier))
+
+    assert classifier.calls == []
+    assert result.ok is True
+    assert result.intent == "OPEN_TERMINAL"
+    assert result.confidence == 1.0
+    assert result.llm_latency_ms == 0.0
+    assert captured["envelope"]["intent"] == "OPEN_TERMINAL"
+    assert captured["kwargs"]["path"] == "fastpath"
+
+
+def test_fastpath_miss_falls_through_to_the_llm_unchanged(monkeypatch):
+    # A phrase fastpath.py can't confidently resolve (a compound command) must still
+    # reach the classifier exactly as before -- fastpath only ever adds a shortcut, it
+    # must never remove the existing fallback behavior.
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.record_utterance",
+        lambda vad, cfg: np.zeros(1600, dtype=np.int16),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.transcribe",
+        lambda *a, **k: _FakeTranscription(text="open obsidian and close the terminal"),
+    )
+    monkeypatch.setattr(
+        "hypr_vocal_command.pipeline.execute",
+        lambda *a, **k: ExecutionResult(ok=False, message="Sorry, I didn't understand that."),
+    )
+    classifier = _FakeClassifier(
+        result=ClassificationResult(
+            raw_response="{}",
+            latency_ms=7.0,
+            envelope={"schema_version": 1, "intent": "UNRECOGNIZED", "confidence": 0.1, "args": {}},
+        )
+    )
+
+    result = run_pipeline(**_kwargs(classifier=classifier))
+
+    assert classifier.calls == [("system prompt", "open obsidian and close the terminal")]
+    assert result.intent == "UNRECOGNIZED"
+    assert result.llm_latency_ms == 7.0
