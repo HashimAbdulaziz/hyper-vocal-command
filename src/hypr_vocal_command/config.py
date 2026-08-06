@@ -36,6 +36,15 @@ class HyprlandActionAlias(BaseModel):
     surface_forms: list[str]
     dispatcher: str
     args: str = ""
+    # When set, this action targets the window that currently has FOCUS, and only runs
+    # if that window's Hyprland class matches this value -- the handler appends an
+    # `address:0x...` selector for it. Needed for `sendshortcut` actions: a bare
+    # `class:^(google-chrome)$` selector matches whichever Chrome window Hyprland
+    # happens to return first, so with two Chrome windows open, "close this tab" could
+    # close a tab in the window the user isn't even looking at. With `follow_mouse = 1`
+    # (this setup), the focused window is the one under the pointer, which is what
+    # "this tab" means to a person. Confirmed live that `address:` targeting is exact.
+    target_active_class: str | None = None
 
 
 DEFAULT_APPS: dict[str, AppAlias] = {
@@ -48,9 +57,18 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             # Egyptian Arabic, including the concept words users reach for instead of the
             # product name ("the notes app", "the vault").
             "اوبسيديان",
+            "النوتس",
+            "نوتس",
+            "الملاحظات",
+            "برنامج النوتس",
+            "الفولت",
+            "فولت",
             # Real mis-hearings observed in live Egyptian-Arabic testing -- whisper drops
             # or mangles the opening alef and the ـيان ending. Deterministic backstop for
-            # when the classifier passes the garbled word straight through.
+            # when the classifier passes the garbled word straight through. Kept at the
+            # TAIL for the same reason as spotify's above: audio/vocabulary.py primes
+            # whisper from the head of this list, and priming it with known-wrong
+            # spellings would work against biasing it toward the correct one.
             "وبسيديان",
             "وبسيدين",
             "وبسينية",
@@ -63,12 +81,6 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             "ابسدين",
             "وبسيدي",
             "ابسيدين",
-            "النوتس",
-            "نوتس",
-            "الملاحظات",
-            "برنامج النوتس",
-            "الفولت",
-            "فولت",
         ],
         manager="flatpak",
         identifier="md.obsidian.Obsidian",
@@ -84,12 +96,6 @@ DEFAULT_APPS: dict[str, AppAlias] = {
         # Spotify is already running). This alias stays for direct, explicit launches.
         surface_forms=[
             "spotify",
-            # Known whisper mis-hearings of "spotify" -- vocabulary priming helps but
-            # doesn't guarantee correct transcription; these are a deterministic backstop
-            # so alias resolution still succeeds if the LLM passes the garbled text
-            # through verbatim as app_name.
-            "putify",
-            "this putify",
             # Egyptian Arabic. Bare "المزيكا"/"الاغاني" (music/songs) deliberately live in
             # MEDIA_CONTROL's prompt guidance instead of here, for the same open-vs-play
             # ambiguity reason as their English counterparts above.
@@ -108,6 +114,15 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             "اغاني",
             "الموسيقى",
             "موسيقى",
+            # Known whisper mis-hearings of "spotify" -- vocabulary priming helps but
+            # doesn't guarantee correct transcription; these are a deterministic backstop
+            # so alias resolution still succeeds if the LLM passes the garbled text
+            # through verbatim as app_name. Kept at the TAIL deliberately: audio/
+            # vocabulary.py primes whisper with the head of this list, and priming the
+            # decoder with known-WRONG spellings works directly against the goal of
+            # biasing it toward the right one.
+            "putify",
+            "this putify",
         ],
         manager="flatpak",
         identifier="com.spotify.Client",
@@ -126,6 +141,16 @@ DEFAULT_APPS: dict[str, AppAlias] = {
             "الترمينال",
             "شاشه الاوامر",
             "سطر الاوامر",
+            # Real CTC mis-hearings of "تيرمينال" captured from the event log. Several
+            # sit below the fuzzy cutoff on their own ("ترمنة" scores 0.62 against the
+            # canonical spelling), so they have to be registered literally or the
+            # transcript-grounding check in executor.py would refuse them.
+            "الترم",
+            "الترمنر",
+            "الدرمنا",
+            "ترمنه",
+            "الترمنه",
+            "ترمنا",
         ],
         manager="native",
         identifier="kitty",
@@ -256,6 +281,92 @@ DEFAULT_APPS: dict[str, AppAlias] = {
         manager="native",
         identifier=f"{Path.home() / '.scripts' / 'screen-record.sh'} toggle",
     ),
+    "pause_recording": AppAlias(
+        # Mirrors SUPER+CTRL+SHIFT+P -- distinct from screen_recording's start/stop toggle.
+        surface_forms=["pause recording", "pause screen recording", "وقف التسجيل"],
+        manager="native",
+        identifier=f"{Path.home() / '.scripts' / 'screen-record.sh'} pause-toggle",
+    ),
+    # The remaining entries below all mirror one real keybind each from this user's own
+    # hyprland.conf, following the exact same "register the real command as a launchable
+    # shortcut" pattern as task_list/timer_toggle/lock_screen above -- found by scanning
+    # that config directly, not guessed.
+    "app_launcher": AppAlias(
+        # Mirrors SUPER+R ($menu).
+        surface_forms=["app launcher", "open launcher", "open the menu", "لانشر", "افتح اللانشر"],
+        manager="native",
+        identifier="sh -c 'pkill rofi || rofi -show drun -theme ~/.config/rofi/launcher/type-7/style-1.rasi'",
+    ),
+    "toggle_waybar": AppAlias(
+        # Mirrors SUPER+SHIFT+B.
+        surface_forms=["toggle waybar", "hide the bar", "show the bar", "اخفي البار", "وار البار"],
+        manager="native",
+        identifier="killall -SIGUSR1 waybar",
+    ),
+    # clipboard_history (SUPER+Y) deliberately NOT registered -- it pipes into `wofi`,
+    # which isn't installed on this machine (confirmed: `which wofi` finds nothing), so
+    # the real keybind is already broken independent of this pipeline. Worth fixing at
+    # the system level (install wofi, or repoint the script at rofi) before wiring a
+    # voice command to it.
+    "bluetooth_menu": AppAlias(
+        # Mirrors SUPER+B.
+        surface_forms=["bluetooth", "bluetooth menu", "open bluetooth", "البلوتوث"],
+        manager="native",
+        identifier="sh -c 'pkill rofi || bash ~/.config/rofi/widgets/bluetooth.sh'",
+    ),
+    "notifications": AppAlias(
+        # Mirrors SUPER+N.
+        surface_forms=["notifications", "notification center", "الاشعارات"],
+        manager="native",
+        identifier="swaync-client -t -sw",
+    ),
+    "audio_mixer": AppAlias(
+        # Mirrors SUPER+A.
+        surface_forms=["audio mixer", "sound settings", "مكسر الصوت", "اعدادات الصوت"],
+        manager="native",
+        identifier="pavucontrol",
+    ),
+    "ranger_file_manager": AppAlias(
+        # Mirrors SUPER+SHIFT+E -- a second, TUI file manager distinct from
+        # OPEN_FILE_MANAGER's GUI nautilus.
+        surface_forms=["ranger", "open ranger", "رينجر"],
+        manager="native",
+        identifier="kitty --class ranger -e ranger",
+    ),
+    "system_monitor": AppAlias(
+        # Mirrors SUPER+ESCAPE.
+        surface_forms=["system monitor", "btop", "open btop", "مراقب النظام"],
+        manager="native",
+        identifier="kitty --class btop -e btop",
+    ),
+    # invert_colors (SUPER+SHIFT+I) deliberately NOT registered -- its script,
+    # ~/.config/hypr/toggle-invert.sh, doesn't exist on disk (confirmed), so that real
+    # keybind is already broken independent of this pipeline. Fix the script/keybind
+    # first, then this is a one-line addition.
+    "solar_zen": AppAlias(
+        # Mirrors SUPER+I.
+        surface_forms=["solar zen mode", "solar zen", "وضع سولار"],
+        manager="native",
+        identifier=str(Path.home() / ".scripts" / "solar-zen-toggle.sh"),
+    ),
+    "qr_scanner": AppAlias(
+        # Mirrors SUPER+SHIFT+Q.
+        surface_forms=["qr scanner", "scan a qr code", "سكانر الكيو ار"],
+        manager="native",
+        identifier=str(Path.home() / ".scripts" / "qr-scanner.sh"),
+    ),
+    "ocr_scan": AppAlias(
+        # Mirrors SUPER+SHIFT+X.
+        surface_forms=["ocr scan", "extract text", "استخراج النص"],
+        manager="native",
+        identifier=str(Path.home() / ".scripts" / "ocr-scan.sh"),
+    ),
+    "toggle_layout": AppAlias(
+        # Mirrors SUPER+SHIFT+R.
+        surface_forms=["toggle layout", "switch layout", "غير الليأوت"],
+        manager="native",
+        identifier=str(Path.home() / ".config" / "hypr" / "toggle-layout.sh"),
+    ),
 }
 
 DEFAULT_PACKAGES: dict[str, PackageAlias] = {
@@ -296,8 +407,113 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
             "شيل ده من قدامي",
             "اقفل الويندو",
             "اقفل التايل",
+            # "tile"/"window" said or mis-heard many different ways -- طايل/تايل are the
+            # same word two ways, بلاطة/بلطة/باطة are progressive typos of "tile" (its
+            # literal meaning, "slab"), نادج/بادج/بدج/دضج are CTC mis-hearings of
+            # "window"/"widget" with no consistent spelling, and English "tile"/"window"/
+            # "page" get code-switched in directly.
+            "اقفل الطايل دي",
+            "اقفل التايل دي",
+            "اقفل ال tile",
+            "اقفل ال tile دي",
+            "اقفل ال window دي",
+            "اقفل البلاطة دي",
+            "اقفل البلطة دي",
+            "اقفل الباطة دي",
+            "اقفل النادج دي",
+            "اقفلالبادج دي",
+            "اقفل ال page دي",
+            "اقفل البدج دي",
+            "اقفل الدضج دب",
+            "اقفل الطايل",
+            "اقفل البلاطة",
+            "اقفل البلطة",
+            "اقفل الباطة",
+            "اقفل النادج",
+            "اقفل البادج",
+            "اقفل البدج",
+            # Further real CTC spellings captured from the event log.
+            "اقفل الطي دي",
+            "اقفل الطيل دي",
+            "اقفل التيل دي",
+            "اقفل الطايله دي",
+            "اقفل الطي",
         ],
         dispatcher="killactive",
+    ),
+    # Restores the focused window from a tab-group ("Restore Grouping Keys" in this
+    # user's dynamic_mode.conf: SUPER+G togglegroup / SUPER+SHIFT+G moveoutofgroup).
+    # Confirmed live: always exits 0, "Window not in a group" in stdout (not an error)
+    # when the focused window isn't grouped -- same safe no-op shape as closewindow.
+    "toggle_group": HyprlandActionAlias(
+        surface_forms=[
+            "toggle group", "group this window", "group this",
+            "جروب الطايل دي", "اعمل جروب", "حط في جروب", "ادخل في جروب",
+            "قروب الطايل دي", "كروب الطايل دي", "دمج الطايل دي في جروب",
+        ],
+        dispatcher="togglegroup",
+    ),
+    "ungroup_window": HyprlandActionAlias(
+        surface_forms=[
+            "ungroup this window", "ungroup this",
+            "فك الجروب",
+            "فك الجروب بتاع التابة دي",
+            "فك القروب",
+            "فك الكروب",
+            "فك الكروب بتاع التايل دي",
+            "فك الجروب بتاع الطايل دي",
+            "فك الجروب بتاع تتيل دي",
+            "فك القروب بتاع التايل دي",
+            "فك الكروب بتاع الطايل دي",
+            "فك الجروب بتاع الويندو دي",
+            "فك القروب بتاع الويندو دي",
+            "فك الجروب بتاع البلاطة دي",
+        ],
+        dispatcher="moveoutofgroup",
+    ),
+    "pin_window": HyprlandActionAlias(
+        surface_forms=["pin this window", "pin this", "ثبت النافذة دي", "ثبت الطايل دي"],
+        dispatcher="pin",
+        args="active",
+    ),
+    "toggle_pseudo": HyprlandActionAlias(
+        surface_forms=["toggle pseudo", "pseudo tile this", "بسيدو تايل"],
+        dispatcher="pseudo",
+    ),
+    # Chrome-specific, via Hyprland's own `sendshortcut` dispatcher -- sends the
+    # browser's native Ctrl+T/Ctrl+W. Deliberately targets the FOCUSED window (see
+    # target_active_class) rather than "any window of this class": a tab belongs to one
+    # specific window, and with several Chrome windows open, a class selector would act
+    # on an arbitrary one. "this tab" means the one in front of the user.
+    "chrome_new_tab": HyprlandActionAlias(
+        surface_forms=[
+            "new tab", "open a new tab", "open new tab",
+            "افتحلي تابة جديدة", "افتح تابة", "افتحلنا تابة اعمنا", "افتح تابة جديدة",
+            "افتح tabe", "افتح تاب", "افتح تب", "افتح طب", "افتح تابة",
+            "افتح صفحة جديدة", "افتحلي تاب جديد", "افتح تاب جديد",
+            # Real CTC spellings of "تابة" from the event log -- these were resolving to
+            # OPEN_APP chrome/vscode instead (opening a whole application rather than a
+            # tab in the one already open).
+            "افتح طبة جديدة", "افتح تيبة جديدة", "افتح طاب جديدة", "افتح تبة جديدة",
+            "يفتح طبة جديد", "افتح تيبة جديد", "افتح طبة", "افتح تيبة", "افتح تبة",
+        ],
+        dispatcher="sendshortcut",
+        args="CTRL,T",
+        target_active_class="google-chrome",
+    ),
+    "chrome_close_tab": HyprlandActionAlias(
+        surface_forms=[
+            "close this tab", "close the tab", "close current tab",
+            "اقل التابة دي", "اقفل ال tabe دي", "اقفل الصفحة دي", "اقفل التاب",
+            "اقفل الطاب", "اقفل التابة دي", "عايز اقفل التابة دي", "عايز اقفل التبة دي",
+            "اقفل التب", "اقفل الصفحه", "اقفل tab",
+            # Real CTC spellings from the event log.
+            "اقفل الطبة دي", "اقفل التبة دي", "اقفل الطبة", "اقفل التيبة دي",
+            "اقفل الطاب دي", "عفي الالتابة دي",
+        ],
+        dispatcher="sendshortcut",
+        args="CTRL,W",
+        target_active_class="google-chrome",
     ),
     "toggle_floating": HyprlandActionAlias(
         surface_forms=["toggle floating", "make this floating", "float this window"],
@@ -347,6 +563,20 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
             "شاشه كامله",
             "وسع الشاشه",
             "كبر البرنامج",
+            # Exiting fullscreen is the SAME dispatch -- Hyprland's `fullscreen` is a
+            # toggle -- so these belong here rather than needing their own action.
+            # Registered explicitly because "فك"/"شيل" are also the ungroup/close verbs:
+            # "فك الفولسكرين" was resolving to moveoutofgroup, and "شيل الفلسكريم" to
+            # CLOSE_APP with a nonsense app name. Both from the real event log.
+            "فك الفولسكرين",
+            "فك الفلسكرين",
+            "شيل الفولسكرين",
+            "شيل الفلسكريم",
+            "الغي الفولسكرين",
+            "اعمل فولسكرين",
+            "فولسكرين",
+            "الفولسكرين",
+            "الفلسكريم",
         ],
         dispatcher="fullscreen",
         args="0",
@@ -354,6 +584,61 @@ DEFAULT_HYPRLAND_ACTIONS: dict[str, HyprlandActionAlias] = {
     "toggle_split": HyprlandActionAlias(
         surface_forms=["toggle split"],
         dispatcher="togglesplit",
+    ),
+    # Directional focus / window swapping, mirroring SUPER+arrows and SUPER+SHIFT+arrows.
+    # Egyptian speakers give directions as يمين/شمال (right/left) far more than the MSA
+    # يسار, and "روح" (go) is the everyday verb for moving focus.
+    "focus_left": HyprlandActionAlias(
+        surface_forms=[
+            "focus left", "go left", "move focus left",
+            "روح للشمال", "روح شمال", "الشمال", "اتحرك شمال",
+        ],
+        dispatcher="movefocus",
+        args="l",
+    ),
+    "focus_right": HyprlandActionAlias(
+        surface_forms=[
+            "focus right", "go right", "move focus right",
+            "روح لليمين", "روح يمين", "اليمين", "اتحرك يمين",
+        ],
+        dispatcher="movefocus",
+        args="r",
+    ),
+    "focus_up": HyprlandActionAlias(
+        surface_forms=["focus up", "go up", "move focus up", "روح فوق", "اتحرك فوق"],
+        dispatcher="movefocus",
+        args="u",
+    ),
+    "focus_down": HyprlandActionAlias(
+        surface_forms=["focus down", "go down", "move focus down", "روح تحت", "اتحرك تحت"],
+        dispatcher="movefocus",
+        args="d",
+    ),
+    "swap_left": HyprlandActionAlias(
+        surface_forms=[
+            "swap left", "swap window left", "move this window left",
+            "بدل مع اللي شمال", "حرك الويندو شمال", "نقل الويندو شمال",
+        ],
+        dispatcher="swapwindow",
+        args="l",
+    ),
+    "swap_right": HyprlandActionAlias(
+        surface_forms=[
+            "swap right", "swap window right", "move this window right",
+            "بدل مع اللي يمين", "حرك الويندو يمين", "نقل الويندو يمين",
+        ],
+        dispatcher="swapwindow",
+        args="r",
+    ),
+    "swap_up": HyprlandActionAlias(
+        surface_forms=["swap up", "swap window up", "حرك الويندو فوق"],
+        dispatcher="swapwindow",
+        args="u",
+    ),
+    "swap_down": HyprlandActionAlias(
+        surface_forms=["swap down", "swap window down", "حرك الويندو تحت"],
+        dispatcher="swapwindow",
+        args="d",
     ),
     "toggle_scratchpad": HyprlandActionAlias(
         surface_forms=[
@@ -473,12 +758,33 @@ def _resolve_hyprland_action(
         if target in (normalize_text(form) for form in alias.surface_forms):
             return alias
 
+    # Whole-WORD containment, not raw substring. A raw substring check silently matched
+    # opposite actions: "group this" is a substring of "ungroup this tab", so an ungroup
+    # request resolved to togglegroup and grouped the window instead of freeing it.
+    # Comparing word sequences makes "group" and "ungroup" distinct, as they are to a
+    # person. Found by the golden fixture, not by reading the code.
+    target_words = target.split()
+    if not target_words:
+        return None
     for alias in aliases.values():
         for form in alias.surface_forms:
-            normalized_form = normalize_text(form)
-            if target and (target in normalized_form or normalized_form in target):
+            form_words = normalize_text(form).split()
+            if not form_words:
+                continue
+            if _contains_words(target_words, form_words) or _contains_words(
+                form_words, target_words
+            ):
                 return alias
     return None
+
+
+def _contains_words(haystack: list[str], needle: list[str]) -> bool:
+    """True when `needle` appears in `haystack` as a contiguous run of whole words."""
+    if len(needle) > len(haystack):
+        return False
+    return any(
+        haystack[i : i + len(needle)] == needle for i in range(len(haystack) - len(needle) + 1)
+    )
 
 
 class Config(BaseModel):
@@ -500,6 +806,11 @@ class Config(BaseModel):
     model_ar: str = "llama3.2:latest"
     ollama_base_url: str = "http://localhost:11434"
     llm_timeout_s: float = 60.0
+    # How long a pause must last before recording stops. Exposed here (rather than only
+    # as an audio/vad.py default) because it is the single largest remaining cost in the
+    # pipeline -- see that file's comment -- and the right value is a matter of personal
+    # speaking rhythm, so it should be tunable from config.toml without a code change.
+    silence_timeout_s: float = 0.7
     allowed_transcription_languages: list[str] = Field(default_factory=lambda: ["en", "ar"])
     apps: dict[str, AppAlias] = Field(default_factory=lambda: dict(DEFAULT_APPS))
     packages: dict[str, PackageAlias] = Field(default_factory=lambda: dict(DEFAULT_PACKAGES))

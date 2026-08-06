@@ -1,56 +1,306 @@
 [
-  {"text": "open a terminal", "intent": "OPEN_TERMINAL"},
-  {"text": "show me my files", "intent": "OPEN_FILE_MANAGER"},
-  {"text": "open obsidian", "intent": "OPEN_APP", "app_name": "obsidian"},
-  {"text": "launch obsidian please", "intent": "OPEN_APP", "app_name": "obsidian"},
-  {"text": "start task", "intent": "OPEN_APP"},
-  {"text": "toggle timer", "intent": "OPEN_APP"},
-  {"text": "lock screen", "intent": "OPEN_APP"},
-  {"text": "open whatsapp", "intent": "OPEN_APP", "app_name": "whatsapp"},
-  {"text": "i want to chat", "intent": "OPEN_APP"},
-  {"text": "open antigravity", "intent": "OPEN_APP", "app_name": "antigravity"},
-  {"text": "open postman", "intent": "OPEN_APP", "app_name": "postman"},
-  {"text": "take a screenshot", "intent": "OPEN_APP"},
-  {"text": "screenshot", "intent": "OPEN_APP"},
-  {"text": "screenshot to clipboard", "intent": "OPEN_APP", "app_name": "screenshot to clipboard"},
-  {"text": "start screen recording", "intent": "OPEN_APP"},
-  {"text": "open spotify", "intent": "OPEN_APP", "app_name": "spotify"},
-  {"text": "this putify", "intent": "OPEN_APP", "app_name": "spotify"},
-  {"text": "update vscode", "intent": "UPDATE_PACKAGE"},
-  {"text": "update all my flatpak apps", "intent": "UPDATE_SYSTEM"},
-  {"text": "go to workspace 2", "intent": "WORKSPACE_SWITCH", "workspace": 2},
-  {"text": "go to the next workspace", "intent": "WORKSPACE_SWITCH", "workspace": "next"},
-  {"text": "go back a workspace", "intent": "WORKSPACE_SWITCH", "workspace": "previous"},
-  {"text": "switch to workspace one", "intent": "WORKSPACE_SWITCH", "workspace": 1},
-  {"text": "I want to go to workspace three", "intent": "WORKSPACE_SWITCH", "workspace": 3},
-  {"text": "close this window", "intent": "HYPRLAND_ACTION"},
-  {"text": "close this tile", "intent": "HYPRLAND_ACTION"},
-  {"text": "close tile", "intent": "HYPRLAND_ACTION"},
-  {"text": "close it", "intent": "HYPRLAND_ACTION"},
-  {"text": "clean this tile", "intent": "HYPRLAND_ACTION"},
-  {"text": "clean this window", "intent": "HYPRLAND_ACTION"},
-  {"text": "shut this window", "intent": "HYPRLAND_ACTION"},
-  {"text": "shut this", "intent": "HYPRLAND_ACTION"},
-  {"text": "kill this window", "intent": "HYPRLAND_ACTION"},
-  {"text": "kill this", "intent": "HYPRLAND_ACTION"},
-  {"text": "get rid of this window", "intent": "HYPRLAND_ACTION"},
-  {"text": "make this floating", "intent": "HYPRLAND_ACTION"},
-  {"text": "fullscreen this tile", "intent": "HYPRLAND_ACTION"},
-  {"text": "maximize this window", "intent": "HYPRLAND_ACTION"},
-  {"text": "toggle fullscreen", "intent": "HYPRLAND_ACTION"},
-  {"text": "show scratchpad", "intent": "HYPRLAND_ACTION"},
-  {"text": "close spotify", "intent": "CLOSE_APP", "app_name": "spotify"},
-  {"text": "kill spotify", "intent": "CLOSE_APP", "app_name": "spotify"},
-  {"text": "close vscode", "intent": "CLOSE_APP", "app_name": "vscode"},
-  {"text": "play music", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "pause music", "intent": "MEDIA_CONTROL", "action": "pause"},
-  {"text": "stop music", "intent": "MEDIA_CONTROL", "action": "pause"},
-  {"text": "start music", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "resume music", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "continue music", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "music", "intent": "MEDIA_CONTROL", "action": "toggle"},
-  {"text": "delete all my files", "intent": "UNRECOGNIZED"},
-  {"text": "what's the weather today", "intent": "UNRECOGNIZED"},
-  {"text": "open spotify on workspace four", "intent": "UNRECOGNIZED"},
-  {"text": "open obsidian and close the terminal", "intent": "UNRECOGNIZED"}
+  {
+    "text": "open a terminal",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "show me my files",
+    "intent": "OPEN_FILE_MANAGER"
+  },
+  {
+    "text": "open obsidian",
+    "intent": "OPEN_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "launch obsidian please",
+    "intent": "OPEN_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "start task",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "toggle timer",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "lock screen",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "open whatsapp",
+    "intent": "OPEN_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "i want to chat",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "open antigravity",
+    "intent": "OPEN_APP",
+    "app_name": "antigravity"
+  },
+  {
+    "text": "open postman",
+    "intent": "OPEN_APP",
+    "app_name": "postman"
+  },
+  {
+    "text": "take a screenshot",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "screenshot",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "screenshot to clipboard",
+    "intent": "OPEN_APP",
+    "app_name": "screenshot to clipboard"
+  },
+  {
+    "text": "start screen recording",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "open spotify",
+    "intent": "OPEN_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "this putify",
+    "intent": "OPEN_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "update vscode",
+    "intent": "UPDATE_PACKAGE"
+  },
+  {
+    "text": "update all my flatpak apps",
+    "intent": "UPDATE_SYSTEM"
+  },
+  {
+    "text": "go to workspace 2",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 2
+  },
+  {
+    "text": "go to the next workspace",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": "next"
+  },
+  {
+    "text": "go back a workspace",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": "previous"
+  },
+  {
+    "text": "switch to workspace one",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 1
+  },
+  {
+    "text": "I want to go to workspace three",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 3
+  },
+  {
+    "text": "close this window",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "close this tile",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "close tile",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "close it",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "clean this tile",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "clean this window",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "shut this window",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "shut this",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "kill this window",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "kill this",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "get rid of this window",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "make this floating",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "fullscreen this tile",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "maximize this window",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "toggle fullscreen",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "show scratchpad",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "close spotify",
+    "intent": "CLOSE_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "kill spotify",
+    "intent": "CLOSE_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "close vscode",
+    "intent": "CLOSE_APP",
+    "app_name": "vscode"
+  },
+  {
+    "text": "play music",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "pause music",
+    "intent": "MEDIA_CONTROL",
+    "action": "pause"
+  },
+  {
+    "text": "stop music",
+    "intent": "MEDIA_CONTROL",
+    "action": "pause"
+  },
+  {
+    "text": "start music",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "resume music",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "continue music",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "music",
+    "intent": "MEDIA_CONTROL",
+    "action": "toggle"
+  },
+  {
+    "text": "delete all my files",
+    "intent": "UNRECOGNIZED"
+  },
+  {
+    "text": "what's the weather today",
+    "intent": "UNRECOGNIZED"
+  },
+  {
+    "text": "open spotify on workspace four",
+    "intent": "UNRECOGNIZED"
+  },
+  {
+    "text": "open obsidian and close the terminal",
+    "intent": "UNRECOGNIZED"
+  },
+  {
+    "text": "turn the volume up",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_up"
+  },
+  {
+    "text": "louder",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_up"
+  },
+  {
+    "text": "turn the volume down",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_down"
+  },
+  {
+    "text": "mute",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_mute"
+  },
+  {
+    "text": "mute my mic",
+    "intent": "SYSTEM_CONTROL",
+    "action": "mic_mute"
+  },
+  {
+    "text": "dim the screen",
+    "intent": "SYSTEM_CONTROL",
+    "action": "brightness_down"
+  },
+  {
+    "text": "make the screen brighter",
+    "intent": "SYSTEM_CONTROL",
+    "action": "brightness_up"
+  },
+  {
+    "text": "next song",
+    "intent": "MEDIA_CONTROL",
+    "action": "next"
+  },
+  {
+    "text": "skip this track",
+    "intent": "MEDIA_CONTROL",
+    "action": "next"
+  },
+  {
+    "text": "go back a song",
+    "intent": "MEDIA_CONTROL",
+    "action": "previous"
+  },
+  {
+    "text": "move this window to workspace 2",
+    "intent": "MOVE_TO_WORKSPACE",
+    "workspace": 2
+  },
+  {
+    "text": "send this to workspace 3",
+    "intent": "MOVE_TO_WORKSPACE",
+    "workspace": 3
+  },
+  {
+    "text": "focus right",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "movefocus"
+  }
 ]

@@ -197,6 +197,50 @@ def test_fuzzy_refuses_short_and_unmatchable_input():
     assert config.resolve_app("some totally unknown app") is None
 
 
+def test_chrome_tab_actions_do_not_kill_the_whole_window():
+    # The safety-critical distinction for these: a browser TAB close must send Chrome's
+    # own Ctrl+W, NOT killactive -- which would close the entire browser window (every
+    # other tab with it) while looking like the command worked.
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    close_tab = config.resolve_hyprland_action("اقفل التابة دي")
+    assert close_tab.dispatcher == "sendshortcut"
+    assert close_tab.args == "CTRL,W"
+    # Targets the FOCUSED Chrome window -- the handler appends its address at runtime.
+    # A bare class selector would act on an arbitrary Chrome window when several are
+    # open, closing a tab the user isn't looking at.
+    assert close_tab.target_active_class == "google-chrome"
+
+    new_tab = config.resolve_hyprland_action("افتحلي تابة جديدة")
+    assert new_tab.dispatcher == "sendshortcut"
+    assert new_tab.args == "CTRL,T"
+    assert new_tab.target_active_class == "google-chrome"
+
+    # ...while a plain "close this window" phrasing still means killactive.
+    assert config.resolve_hyprland_action("اقفل الشاشه دي").dispatcher == "killactive"
+
+
+def test_tile_word_mishearings_all_resolve_to_killactive():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    for phrase in ("اقفل الطايل دي", "اقفل البلاطة دي", "اقفل النادج دي", "اقفل البدج دي"):
+        alias = config.resolve_hyprland_action(phrase)
+        assert alias is not None, phrase
+        assert alias.dispatcher == "killactive", phrase
+
+
+def test_ungroup_spelling_variants_resolve_to_moveoutofgroup():
+    from hypr_vocal_command.config import Config
+
+    config = Config()
+    for phrase in ("فك الجروب", "فك القروب", "فك الكروب", "فك الكروب بتاع التايل دي"):
+        alias = config.resolve_hyprland_action(phrase)
+        assert alias is not None, phrase
+        assert alias.dispatcher == "moveoutofgroup", phrase
+
+
 def test_exact_match_still_wins_over_fuzzy():
     from hypr_vocal_command.config import Config
 

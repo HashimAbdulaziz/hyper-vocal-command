@@ -1,63 +1,437 @@
 [
-  {"text": "التيرمينال", "intent": "OPEN_TERMINAL"},
-  {"text": "افتح ال terminal", "intent": "OPEN_TERMINAL"},
-  {"text": "شغل terminal", "intent": "OPEN_TERMINAL"},
-  {"text": "يسطا هات التيرمينال", "intent": "OPEN_TERMINAL"},
-  {"text": "هاتلي شاشة التيرمينال", "intent": "OPEN_TERMINAL"},
-  {"text": "ممكن تفتحلي التيرمينال؟", "intent": "OPEN_TERMINAL"},
-  {"text": "افتح سطر الأوامر", "intent": "OPEN_TERMINAL"},
-  {"text": "أنا عايز افتح التيرمينال", "intent": "OPEN_TERMINAL"},
-
-  {"text": "يسطا افتح الواتس", "intent": "OPEN_APP", "app_name": "whatsapp"},
-  {"text": "افتح الواتساب", "intent": "OPEN_APP", "app_name": "whatsapp"},
-  {"text": "كنت عايز ابص على الواتس", "intent": "OPEN_APP", "app_name": "whatsapp"},
-  {"text": "شغل تطبيق الواتساب", "intent": "OPEN_APP", "app_name": "whatsapp"},
-  {"text": "عايز اشوف رسايل الواتس", "intent": "OPEN_APP", "app_name": "whatsapp"},
-
-  {"text": "شغل اوبسيديان", "intent": "OPEN_APP", "app_name": "obsidian"},
-  {"text": "هاتلي اوبسيديان", "intent": "OPEN_APP", "app_name": "obsidian"},
-  {"text": "بقولك إيه، افتحلي اوبسيديان كده", "intent": "OPEN_APP", "app_name": "obsidian"},
-  {"text": "افتحلي الـ vault بتاع اوبسيديان", "intent": "OPEN_APP", "app_name": "obsidian"},
-  {"text": "عايز افتح النوتس بتاعتي على اوبسيديان", "intent": "OPEN_APP"},
-
-  {"text": "عايز اكود", "intent": "OPEN_APP"},
-  {"text": "عايز اكود افتحلي الاديتور", "intent": "OPEN_APP"},
-  {"text": "شغل في اس كود", "intent": "OPEN_APP"},
-  {"text": "يا صاحبي افتح الـ editor", "intent": "OPEN_APP"},
-  {"text": "افتح الـ code editor", "intent": "OPEN_APP"},
-
-  {"text": "يسطا افتح كروم", "intent": "OPEN_APP", "app_name": "chrome"},
-  {"text": "يا صاحبي افتح المتصفح", "intent": "OPEN_APP", "app_name": "chrome"},
-  {"text": "هات البراوزر", "intent": "OPEN_APP", "app_name": "chrome"},
-  {"text": "عايز ادخل على النت، هاتلي كروم", "intent": "OPEN_APP", "app_name": "chrome"},
-
-  {"text": "شغل سبوتيفاي", "intent": "OPEN_APP", "app_name": "spotify"},
-  {"text": "طلعلي سبوتيفاي قدامي", "intent": "OPEN_APP", "app_name": "spotify"},
-
-  {"text": "عايز اسمع اغاني", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "عايز اسمع موسيقى", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "شغل الاغاني", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "شغلنا حاجة نسمعها يبني", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "سمعنا حاجة وروقلنا الكلام", "intent": "MEDIA_CONTROL", "action": "play"},
-  {"text": "وقف الأغاني", "intent": "MEDIA_CONTROL", "action": "pause"},
-
-  {"text": "اقفل الواتس", "intent": "CLOSE_APP", "app_name": "whatsapp"},
-  {"text": "اقفل الواتس بقى وجع دماغ", "intent": "CLOSE_APP", "app_name": "whatsapp"},
-  {"text": "شيل الواتس من قدامي", "intent": "CLOSE_APP", "app_name": "whatsapp"},
-  {"text": "اخرج من الواتس", "intent": "CLOSE_APP", "app_name": "whatsapp"},
-  {"text": "اقفل اوبسيديان", "intent": "CLOSE_APP", "app_name": "obsidian"},
-  {"text": "شيل اوبسيديان من قدامي خلاص", "intent": "CLOSE_APP", "app_name": "obsidian"},
-  {"text": "اطلع من اوبسيديان", "intent": "CLOSE_APP", "app_name": "obsidian"},
-  {"text": "اقفل التيرمينال", "intent": "CLOSE_APP", "app_name": "terminal"},
-  {"text": "اعمل kill للتيرمينال", "intent": "CLOSE_APP", "app_name": "terminal"},
-  {"text": "صدعت، اقفل سبوتيفاي", "intent": "CLOSE_APP", "app_name": "spotify"},
-  {"text": "اقفل المزيكا", "intent": "CLOSE_APP"},
-
-  {"text": "كبر الشاشة", "intent": "HYPRLAND_ACTION"},
-  {"text": "فول سكرين", "intent": "HYPRLAND_ACTION"},
-  {"text": "افرد الشاشة", "intent": "HYPRLAND_ACTION"},
-  {"text": "خلي الشاشة كاملة", "intent": "HYPRLAND_ACTION"},
-  {"text": "اقفل الشاشة دي", "intent": "HYPRLAND_ACTION"},
-
-  {"text": "روح للورك سبيس اتنين", "intent": "WORKSPACE_SWITCH", "workspace": 2}
+  {
+    "text": "التيرمينال",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "افتح ال terminal",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "شغل terminal",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "يسطا هات التيرمينال",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "هاتلي شاشة التيرمينال",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "ممكن تفتحلي التيرمينال؟",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "افتح سطر الأوامر",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "أنا عايز افتح التيرمينال",
+    "intent": "OPEN_TERMINAL"
+  },
+  {
+    "text": "يسطا افتح الواتس",
+    "intent": "OPEN_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "افتح الواتساب",
+    "intent": "OPEN_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "كنت عايز ابص على الواتس",
+    "intent": "OPEN_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "شغل تطبيق الواتساب",
+    "intent": "OPEN_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "عايز اشوف رسايل الواتس",
+    "intent": "OPEN_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "شغل اوبسيديان",
+    "intent": "OPEN_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "هاتلي اوبسيديان",
+    "intent": "OPEN_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "بقولك إيه، افتحلي اوبسيديان كده",
+    "intent": "OPEN_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "افتحلي الـ vault بتاع اوبسيديان",
+    "intent": "OPEN_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "عايز افتح النوتس بتاعتي على اوبسيديان",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "عايز اكود",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "عايز اكود افتحلي الاديتور",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "شغل في اس كود",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "يا صاحبي افتح الـ editor",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "افتح الـ code editor",
+    "intent": "OPEN_APP"
+  },
+  {
+    "text": "يسطا افتح كروم",
+    "intent": "OPEN_APP",
+    "app_name": "chrome"
+  },
+  {
+    "text": "يا صاحبي افتح المتصفح",
+    "intent": "OPEN_APP",
+    "app_name": "chrome"
+  },
+  {
+    "text": "هات البراوزر",
+    "intent": "OPEN_APP",
+    "app_name": "chrome"
+  },
+  {
+    "text": "عايز ادخل على النت، هاتلي كروم",
+    "intent": "OPEN_APP",
+    "app_name": "chrome"
+  },
+  {
+    "text": "شغل سبوتيفاي",
+    "intent": "OPEN_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "طلعلي سبوتيفاي قدامي",
+    "intent": "OPEN_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "عايز اسمع اغاني",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "عايز اسمع موسيقى",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "شغل الاغاني",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "شغلنا حاجة نسمعها يبني",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "سمعنا حاجة وروقلنا الكلام",
+    "intent": "MEDIA_CONTROL",
+    "action": "play"
+  },
+  {
+    "text": "وقف الأغاني",
+    "intent": "MEDIA_CONTROL",
+    "action": "pause"
+  },
+  {
+    "text": "اقفل الواتس",
+    "intent": "CLOSE_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "اقفل الواتس بقى وجع دماغ",
+    "intent": "CLOSE_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "شيل الواتس من قدامي",
+    "intent": "CLOSE_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "اخرج من الواتس",
+    "intent": "CLOSE_APP",
+    "app_name": "whatsapp"
+  },
+  {
+    "text": "اقفل اوبسيديان",
+    "intent": "CLOSE_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "شيل اوبسيديان من قدامي خلاص",
+    "intent": "CLOSE_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "اطلع من اوبسيديان",
+    "intent": "CLOSE_APP",
+    "app_name": "obsidian"
+  },
+  {
+    "text": "اقفل التيرمينال",
+    "intent": "CLOSE_APP",
+    "app_name": "terminal"
+  },
+  {
+    "text": "اعمل kill للتيرمينال",
+    "intent": "CLOSE_APP",
+    "app_name": "terminal"
+  },
+  {
+    "text": "صدعت، اقفل سبوتيفاي",
+    "intent": "CLOSE_APP",
+    "app_name": "spotify"
+  },
+  {
+    "text": "اقفل المزيكا",
+    "intent": "MEDIA_CONTROL",
+    "action": "pause",
+    "note": "genuinely ambiguous between closing Spotify and pausing it -- both stop the music, so the model's answer is accepted either way rather than forced; see llm/prompts.py's Arabic MEDIA-pause verb pattern, which explicitly lists this phrase too"
+  },
+  {
+    "text": "كبر الشاشة",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "فول سكرين",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "افرد الشاشة",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "خلي الشاشة كاملة",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "اقفل الشاشة دي",
+    "intent": "HYPRLAND_ACTION"
+  },
+  {
+    "text": "روح للورك سبيس اتنين",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 2
+  },
+  {
+    "text": "روح للورك سباس الاولى",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 1
+  },
+  {
+    "text": "روح للورك سبس الاولى",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 1
+  },
+  {
+    "text": "روح لورك سباس واحد",
+    "intent": "WORKSPACE_SWITCH",
+    "workspace": 1
+  },
+  {
+    "text": "اقفل الطايل دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "اقفل التايل دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "اقفل البلاطة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "اقفل البلطة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "اقفل الباطة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "اقفل النادج دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "اقفل البدج دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "killactive"
+  },
+  {
+    "text": "فك الجروب",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "moveoutofgroup"
+  },
+  {
+    "text": "فك القروب",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "moveoutofgroup",
+    "known_limitation": "قروب/كروب spellings reach the LLM as unfamiliar tokens; only جروب lands. Fastpath resolves all three to moveoutofgroup deterministically. Further prompt pressure was tried and regressed other phrases while doubling latency, so it was reverted."
+  },
+  {
+    "text": "فك الكروب",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "moveoutofgroup",
+    "known_limitation": "same as فك القروب -- fastpath resolves it to moveoutofgroup. Further prompt pressure was tried and regressed other phrases while doubling latency, so it was reverted."
+  },
+  {
+    "text": "فك الجروب بتاع التابة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "moveoutofgroup"
+  },
+  {
+    "text": "فك الكروب بتاع التايل دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "moveoutofgroup"
+  },
+  {
+    "text": "اقفل التابة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut"
+  },
+  {
+    "text": "اقفل التاب",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut"
+  },
+  {
+    "text": "اقفل الصفحة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut",
+    "known_limitation": "LLM reads الصفحة as the window and answers killactive; the fastpath resolves this exact phrase to Ctrl+W correctly, so the live pipeline is right. An explicit contrast example was added and did not move it -- same diminishing-returns pattern as the 'workspace one' and screenshot cases."
+  },
+  {
+    "text": "عايز اقفل التابة دي",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut"
+  },
+  {
+    "text": "افتحلي تابة جديدة",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut",
+    "known_limitation": "LLM opens Chrome itself instead of a new tab in it. Fastpath resolves all three to sendshortcut CTRL,T correctly, so the live pipeline is right. A targeted prompt fix already removed the DANGEROUS reading here (it previously answered CLOSE_APP{chrome}, i.e. closing the whole browser when asked to open a tab); what remains is harmless and reversible, and further pressure regressed other phrases while doubling latency."
+  },
+  {
+    "text": "افتح تابة جديدة",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut",
+    "known_limitation": "LLM opens Chrome itself instead of a new tab in it. Fastpath resolves all three to sendshortcut CTRL,T correctly, so the live pipeline is right. A targeted prompt fix already removed the DANGEROUS reading here (it previously answered CLOSE_APP{chrome}, i.e. closing the whole browser when asked to open a tab); what remains is harmless and reversible, and further pressure regressed other phrases while doubling latency."
+  },
+  {
+    "text": "افتح تاب",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "sendshortcut",
+    "known_limitation": "LLM opens Chrome itself instead of a new tab in it. Fastpath resolves all three to sendshortcut CTRL,T correctly, so the live pipeline is right. A targeted prompt fix already removed the DANGEROUS reading here (it previously answered CLOSE_APP{chrome}, i.e. closing the whole browser when asked to open a tab); what remains is harmless and reversible, and further pressure regressed other phrases while doubling latency."
+  },
+  {
+    "text": "علي الصوت",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_up"
+  },
+  {
+    "text": "زود الصوت",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_up"
+  },
+  {
+    "text": "وطي الصوت",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_down"
+  },
+  {
+    "text": "قلل الصوت",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_down",
+    "known_limitation": "قلل is shared between قلل الصوت (volume) and قلل النور (brightness) and the LLM picks brightness. Fastpath resolves this to volume_down correctly. Further prompt pressure was tried and regressed other phrases while doubling latency, so it was reverted."
+  },
+  {
+    "text": "اكتم الصوت",
+    "intent": "SYSTEM_CONTROL",
+    "action": "volume_mute"
+  },
+  {
+    "text": "اكتم المايك",
+    "intent": "SYSTEM_CONTROL",
+    "action": "mic_mute"
+  },
+  {
+    "text": "نور الشاشة",
+    "intent": "SYSTEM_CONTROL",
+    "action": "brightness_up"
+  },
+  {
+    "text": "قلل النور",
+    "intent": "SYSTEM_CONTROL",
+    "action": "brightness_down"
+  },
+  {
+    "text": "غير الاغنية",
+    "intent": "MEDIA_CONTROL",
+    "action": "next"
+  },
+  {
+    "text": "اللي بعده",
+    "intent": "MEDIA_CONTROL",
+    "action": "next"
+  },
+  {
+    "text": "الاغنية اللي فاتت",
+    "intent": "MEDIA_CONTROL",
+    "action": "previous"
+  },
+  {
+    "text": "ابعت الويندو دي للورك سبيس اتنين",
+    "intent": "MOVE_TO_WORKSPACE",
+    "workspace": 2
+  },
+  {
+    "text": "حط دي في الورك سبيس تلاتة",
+    "intent": "MOVE_TO_WORKSPACE",
+    "workspace": 3
+  },
+  {
+    "text": "روح لليمين",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "movefocus"
+  },
+  {
+    "text": "روح للشمال",
+    "intent": "HYPRLAND_ACTION",
+    "dispatcher": "movefocus",
+    "known_limitation": "روح is shared with workspace navigation (روح للورك سبيس) so the LLM answers WORKSPACE_SWITCH. Fastpath resolves it to movefocus l correctly. Further prompt pressure was tried and regressed other phrases while doubling latency, so it was reverted."
+  }
 ]
