@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/architecture.png" alt="hypr-vocal-command architecture: hotkey, listen, speech-to-text, understand, check, act" width="900">
+</p>
+
 # hypr-vocal-command
 
 A fully local, offline voice-command execution daemon for Hyprland on Fedora. Press a
